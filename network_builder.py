@@ -1765,6 +1765,8 @@ class WikipediaNetworkBuilder:
         output_path: str = "wiki_network.html",
         physics: bool = True,
         color_by: str = "depth",  # "depth" or "community"
+        physics_engine: str = "barnes_hut",
+        custom_physics_params: Optional[dict] = None,
         **kwargs,
     ):
         """
@@ -1774,6 +1776,8 @@ class WikipediaNetworkBuilder:
             output_path: Output HTML file path
             physics: Enable physics simulation
             color_by: Color nodes by "depth" or "community"
+            physics_engine: Physics engine to use ("barnes_hut", "force_atlas2", "hierarchical", "circular", "organic")
+            custom_physics_params: Custom physics parameters to override defaults
             **kwargs: Additional pyvis Network parameters
         """
         default_params = {
@@ -1789,15 +1793,31 @@ class WikipediaNetworkBuilder:
 
         net = Network(**default_params)
 
-        # Configure physics
+        # Configure physics using ForceDirectedVisualizer if available
         if physics:
-            net.barnes_hut(
-                gravity=-80000,
-                central_gravity=0.3,
-                spring_length=200,
-                spring_strength=0.001,
-                damping=0.09,
-            )
+            try:
+                from force_directed_visualizer import ForceDirectedVisualizer
+                visualizer = ForceDirectedVisualizer(self.graph)
+                
+                # Use force-directed visualizer for enhanced physics
+                visualizer.visualize(
+                    output_path=output_path,
+                    physics_type=physics_engine,
+                    color_by=color_by,
+                    custom_params=custom_physics_params,
+                    **default_params
+                )
+                return  # Exit early since ForceDirectedVisualizer handles everything
+                
+            except ImportError:
+                # Fallback to original physics configuration
+                net.barnes_hut(
+                    gravity=-80000,
+                    central_gravity=0.3,
+                    spring_length=200,
+                    spring_strength=0.001,
+                    damping=0.09,
+                )
 
         # Choose coloring scheme
         if color_by == "community" and self.communities:
@@ -1827,9 +1847,7 @@ class WikipediaNetworkBuilder:
                 title_info = f"{node}\nDepth: {depth}\nCommunity: {community}\nDegree: {self.graph.degree(node)}"
             else:
                 color = color_map.get(depth, "#95a5a6")
-                title_info = (
-                    f"{node}\nDepth: {depth}\nDegree: {self.graph.degree(node)}"
-                )
+                title_info = f"{node}\nDepth: {depth}\nDegree: {self.graph.degree(node)}"
 
             # Calculate node size based on degree
             degree = self.graph.degree(node)
@@ -1940,18 +1958,27 @@ class WikipediaNetworkBuilder:
             self.graph.to_undirected(), pos, alpha=0.5, edge_color="gray", width=0.5
         )
 
-        # Add labels for important nodes (high degree)
-        degree_dict = dict(self.graph.degree())
-        high_degree_nodes = [
-            node
-            for node, degree in degree_dict.items()
-            if degree > np.percentile(list(degree_dict.values()), 90)
-        ]
-        labels = {node: node for node in high_degree_nodes}
-        nx.draw_networkx_labels(self.graph.to_undirected(), pos, labels, font_size=8)
-
         plt.title(f"Community Structure ({len(self.communities)} communities)")
-        plt.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
+        
+        # Create a custom legend with community names instead of overlaying text on graph
+        legend_elements = []
+        for i, community in enumerate(self.communities):
+            community_nodes = [node for node in community if node in self.graph.nodes()]
+            if community_nodes:
+                # Find the most connected node in this community as representative
+                degree_dict = dict(self.graph.degree())
+                representative_node = max(community_nodes, key=lambda x: degree_dict.get(x, 0))
+                
+                # Create legend entry with community color and representative node name
+                legend_elements.append(
+                    plt.Line2D([0], [0], marker='o', color='w', 
+                              markerfacecolor=community_colors[i], markersize=10,
+                              label=f"Community {i+1}: {representative_node}")
+                )
+        
+        # Position legend outside the plot area
+        plt.legend(handles=legend_elements, bbox_to_anchor=(1.05, 1), loc="upper left", 
+                  frameon=True, fancybox=True, shadow=True)
         plt.axis("off")
         plt.tight_layout()
         plt.savefig(output_path, dpi=300, bbox_inches="tight")
@@ -2050,6 +2077,133 @@ class WikipediaNetworkBuilder:
         self.visited = set(self.graph.nodes())
         self.logger.info(f"Graph loaded from {filepath}")
 
+    def analyze_influence_propagation(self, seed_nodes: List[str] = None, 
+                                    model: str = "independent_cascade", 
+                                    num_simulations: int = 100) -> Dict:
+        """
+        Analyze influence propagation in the network.
+        
+        Args:
+            seed_nodes: Initial nodes to start propagation from
+            model: Propagation model ("independent_cascade" or "linear_threshold")
+            num_simulations: Number of Monte Carlo simulations
+            
+        Returns:
+            Dictionary with influence propagation results
+        """
+        try:
+            from influence_propagation import InfluencePropagationSimulator, PropagationConfig, PropagationModel
+            
+            # Use seed nodes or find optimal ones
+            if seed_nodes is None:
+                # Use top PageRank nodes as seeds
+                pagerank = nx.pagerank(self.graph)
+                seed_nodes = sorted(pagerank.keys(), key=pagerank.get, reverse=True)[:3]
+            
+            # Filter valid seed nodes
+            valid_seeds = [node for node in seed_nodes if node in self.graph.nodes()]
+            if not valid_seeds:
+                self.logger.warning("No valid seed nodes found")
+                return {}
+            
+            # Configure simulation
+            model_enum = PropagationModel.INDEPENDENT_CASCADE if model == "independent_cascade" else PropagationModel.LINEAR_THRESHOLD
+            config = PropagationConfig(
+                model=model_enum,
+                num_simulations=num_simulations,
+                activation_probability=0.15,
+                verbose=False
+            )
+            
+            # Create simulator
+            simulator = InfluencePropagationSimulator(self.graph, config)
+            
+            # Run Monte Carlo simulation
+            mc_results = simulator.monte_carlo_simulation(valid_seeds)
+            
+            # Find optimal seeds for comparison
+            optimal_seeds = simulator.find_optimal_seeds(len(valid_seeds), "greedy")
+            optimal_results = simulator.monte_carlo_simulation(optimal_seeds)
+            
+            # Compare different strategies
+            strategy_comparison = simulator.compare_seed_strategies(len(valid_seeds))
+            
+            # Analyze network vulnerability
+            vulnerability = simulator.analyze_network_vulnerability([1, 2, 3, 5])
+            
+            return {
+                'selected_seeds': {
+                    'nodes': valid_seeds,
+                    'mean_influence': mc_results['mean_influence'],
+                    'activation_rate': mc_results['mean_activation_rate'],
+                    'most_influenced': mc_results['most_frequently_activated'][:10]
+                },
+                'optimal_seeds': {
+                    'nodes': optimal_seeds,
+                    'mean_influence': optimal_results['mean_influence'],
+                    'activation_rate': optimal_results['mean_activation_rate'],
+                    'most_influenced': optimal_results['most_frequently_activated'][:10]
+                },
+                'strategy_comparison': strategy_comparison,
+                'vulnerability_analysis': vulnerability,
+                'model_used': model,
+                'num_simulations': num_simulations
+            }
+            
+        except ImportError:
+            self.logger.error("Influence propagation module not found")
+            return {}
+        except Exception as e:
+            self.logger.error(f"Error in influence propagation analysis: {e}")
+            return {}
+    
+    def visualize_influence_propagation(self, seeds: List[str] = None, 
+                                      model: str = "independent_cascade",
+                                      output_path: str = "influence_propagation.png"):
+        """
+        Create visualization of influence propagation.
+        
+        Args:
+            seeds: Seed nodes for propagation
+            model: Propagation model to use
+            output_path: Output file path
+        """
+        try:
+            from influence_propagation import InfluencePropagationSimulator, PropagationConfig, PropagationModel
+            
+            # Use provided seeds or find optimal ones
+            if seeds is None:
+                pagerank = nx.pagerank(self.graph)
+                seeds = sorted(pagerank.keys(), key=pagerank.get, reverse=True)[:3]
+            
+            # Filter valid seeds
+            valid_seeds = [node for node in seeds if node in self.graph.nodes()]
+            if not valid_seeds:
+                self.logger.warning("No valid seed nodes for propagation visualization")
+                return
+            
+            # Configure simulation
+            model_enum = PropagationModel.INDEPENDENT_CASCADE if model == "independent_cascade" else PropagationModel.LINEAR_THRESHOLD
+            config = PropagationConfig(
+                model=model_enum,
+                activation_probability=0.15,
+                verbose=False
+            )
+            
+            # Create simulator and run single simulation
+            simulator = InfluencePropagationSimulator(self.graph, config)
+            result = simulator.simulate_propagation(valid_seeds)
+            
+            # Create visualization
+            simulator.visualize_propagation(result, output_path)
+            
+            self.logger.info(f"Influence propagation visualization saved to {output_path}")
+            
+        except ImportError:
+            self.logger.error("Influence propagation module not found")
+        except Exception as e:
+            self.logger.error(f"Error creating influence propagation visualization: {e}")
+
     def save_to_history(self, history_dir: str = "history"):
         """
         Save current output files to a unique run directory within history folder.
@@ -2081,6 +2235,7 @@ class WikipediaNetworkBuilder:
             "wiki_network_communities.html",
             "communities.png",
             "wiki_network.graphml",
+            "influence_propagation.png",
         ]
 
         archived_files = []

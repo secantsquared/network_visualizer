@@ -52,6 +52,16 @@ class NetworkConfig:
     spokes_per_hub: int = 3
     hub_depth_limit: int = 2
 
+    # Data source parameters
+    data_source_type: str = "wikipedia"  # "wikipedia", "coursera", "hybrid"
+    primary_data_source: str = "wikipedia"  # For hybrid mode
+    coursera_dataset_path: Optional[str] = None
+    
+    # Force-directed visualization parameters
+    physics_engine: str = "barnes_hut"  # "barnes_hut", "force_atlas2", "hierarchical", "circular", "organic"
+    custom_physics_params: Optional[dict] = None
+    adaptive_physics: bool = True  # Auto-adjust parameters based on network size
+
     def __post_init__(self):
         """Initialize default filter patterns and validate config."""
         if self.filter_patterns is None:
