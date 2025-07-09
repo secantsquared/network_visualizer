@@ -236,7 +236,7 @@ If you use this tool in academic work, please cite:
   title = {Network Analyzer: A Tool for Knowledge Network Analysis},
   author = {Ryan Boris},
   year = {2025},
-  url = {https://github.com/username/network-analyzer}
+  url = {https://github.com/secantsquared/network-analyzer}
 }
 ```
 
