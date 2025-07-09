@@ -234,8 +234,8 @@ If you use this tool in academic work, please cite:
 ```bibtex
 @software{network_analyzer,
   title = {Network Analyzer: A Tool for Knowledge Network Analysis},
-  author = {Network Analyzer Team},
-  year = {2024},
+  author = {Ryan Boris},
+  year = {2025},
   url = {https://github.com/username/network-analyzer}
 }
 ```
