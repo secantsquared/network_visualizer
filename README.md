@@ -29,7 +29,7 @@ A powerful Python tool for building and analyzing knowledge networks from Wikipe
 ### From Source
 
 ```bash
-git clone https://github.com/username/network-analyzer.git
+git clone https://github.com/secantsquared/network-analyzer.git
 cd network-analyzer
 pip install -e .
 ```
