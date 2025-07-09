@@ -18,8 +18,8 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/username/network-analyzer",
-    package_dir={"": "src"},
-    packages=find_packages(where="src"),
+    package_dir={"": "src", "scripts": "scripts"},
+    packages=find_packages(where="src") + ["scripts"],
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Researchers",
