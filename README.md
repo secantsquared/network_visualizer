@@ -4,7 +4,7 @@ A powerful Python tool for building and analyzing knowledge networks from Wikipe
 
 ## Features
 
-- **Multi-source Network Building**: Build networks from Wikipedia articles and Coursera course data
+- **Multi-source Network Building**: Build networks from Wikipedia articles and publicly available Coursera course data from Kaggle
 - **Multiple Network Construction Methods**: 
   - Breadth-first search (sync/async)
   - Random walk with restart
@@ -212,6 +212,7 @@ Models how information spreads through the network using:
 - Skill-based relationship mapping
 - Course metadata integration
 - Learning path analysis
+- **Dataset**: Uses the publicly available Coursera course dataset from Kaggle: https://www.kaggle.com/datasets/azraimohamad/coursera-course-data?select=coursera_course_dataset_v3.csv
 
 ## Contributing
 
