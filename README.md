@@ -255,9 +255,9 @@ If you use this tool in academic work, please cite:
 
 ## Support
 
-- Documentation: [ReadTheDocs](https://network-analyzer.readthedocs.io)
-- Issues: [GitHub Issues](https://github.com/username/network-analyzer/issues)
-- Discussions: [GitHub Discussions](https://github.com/username/network-analyzer/discussions)
+- Documentation: [ReadTheDocs](https://network-visualizer.readthedocs.io/en/latest/)
+- Issues: [GitHub Issues](https://github.com/secantsquared/network-analyzer/issues)
+- Discussions: [GitHub Discussions](https://github.com/secantsquared/network-analyzer/discussions)
 
 ## Changelog
 
