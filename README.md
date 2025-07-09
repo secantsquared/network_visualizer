@@ -5,7 +5,7 @@ A powerful Python tool for building and analyzing knowledge networks from Wikipe
 ## Features
 
 - **Multi-source Network Building**: Build networks from Wikipedia articles and publicly available Coursera course data from Kaggle
-- **Multiple Network Construction Methods**: 
+- **Multiple Network Construction Methods**:
   - Breadth-first search (sync/async)
   - Random walk with restart
   - Depth-first search with backtracking
@@ -77,7 +77,7 @@ config = NetworkConfig(
 )
 
 # Build unified network
-builder = UnifiedNetworkBuilder(config, 
+builder = UnifiedNetworkBuilder(config,
                                coursera_dataset_path="data/coursera_courses_2024.csv")
 graph = builder.build_network(["Python Programming", "Machine Learning"])
 
@@ -138,17 +138,17 @@ config = NetworkConfig(
     max_depth=2,
     max_articles_to_process=50,
     links_per_article=20,
-    
+
     # Performance
     max_workers=8,
     async_enabled=True,
     max_concurrent_requests=20,
-    
+
     # Algorithm-specific
     random_walk_steps=100,
     restart_probability=0.15,
     topic_similarity_threshold=0.3,
-    
+
     # Data sources
     data_source_type="hybrid",
     primary_data_source="wikipedia",
@@ -159,44 +159,55 @@ config = NetworkConfig(
 ## Network Building Methods
 
 ### 1. Breadth-First Search
+
 Explores the network level by level, ideal for comprehensive local exploration.
 
 ### 2. Random Walk
+
 Stochastic exploration with restart probability, good for discovering unexpected connections.
 
 ### 3. Depth-First Search
+
 Deep exploration with backtracking, useful for finding long paths and specialized topics.
 
 ### 4. Topic-Focused Crawling
+
 Uses keyword similarity to stay focused on specific topics.
 
 ### 5. Hub-and-Spoke
+
 Identifies important nodes (hubs) and expands around them.
 
 ## Analysis Features
 
 ### Community Detection
+
 Automatically identifies clusters of related topics using modularity optimization.
 
 ### Centrality Measures
+
 - **Degree Centrality**: Most connected nodes
 - **PageRank**: Authority-based importance
 - **Betweenness Centrality**: Bridge nodes
 
 ### Influence Propagation
+
 Models how information spreads through the network using:
+
 - Independent Cascade Model
 - Linear Threshold Model
 
 ## Visualization
 
 ### Interactive Networks
+
 - Physics-based layouts with multiple engines
 - Node coloring by depth or community
 - Interactive exploration with zoom and pan
 - Customizable styling
 
 ### Static Plots
+
 - Community structure visualization
 - Influence propagation heatmaps
 - Network statistics charts
@@ -204,15 +215,17 @@ Models how information spreads through the network using:
 ## Data Sources
 
 ### Wikipedia
+
 - Uses MediaWiki API for real-time data
 - Intelligent filtering of disambiguation pages
 - Configurable link extraction
 
 ### Coursera Courses
+
 - Skill-based relationship mapping
 - Course metadata integration
 - Learning path analysis
-- **Dataset**: Uses the publicly available Coursera course dataset from Kaggle: https://www.kaggle.com/datasets/azraimohamad/coursera-course-data?select=coursera_course_dataset_v3.csv
+- **Dataset**: Uses the publicly available [Coursera course dataset](https://www.kaggle.com/datasets/azraimohamad/coursera-course-data?select=coursera_course_dataset_v3.csv) from Kaggle
 
 ## Contributing
 
