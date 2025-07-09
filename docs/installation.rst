@@ -56,15 +56,6 @@ From PyPI (When Available)
 
     pip install network-analyzer
 
-Docker Installation
-~~~~~~~~~~~~~~~~~~~
-
-A Docker image is available for containerized deployment:
-
-.. code-block:: bash
-
-    docker pull username/network-analyzer:latest
-    docker run -it username/network-analyzer:latest
 
 Virtual Environment (Recommended)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
