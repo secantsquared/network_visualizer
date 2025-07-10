@@ -151,3 +151,8 @@ Thumbs.db
 .flake8
 
 history/**
+
+*.png
+*.gif
+temporal_network_data.json
+temporal_network_data_extended.json
