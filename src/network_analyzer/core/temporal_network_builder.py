@@ -110,12 +110,13 @@ class TemporalNetworkBuilder(WikipediaNetworkBuilder):
             self.graph.nodes[node]['added_at'] = self.node_addition_times[node]['timestamp']
             self.graph.nodes[node]['discovery_order'] = self.node_addition_times[node]['order']
     
-    def build_network(self, seeds: List[str], method: str = "breadth_first") -> nx.Graph:
+    def build_network(self, seeds: List[str], progress_callback: Optional[callable] = None, method: str = "breadth_first") -> nx.Graph:
         """
         Build network with temporal tracking.
         
         Args:
             seeds: List of seed articles
+            progress_callback: Optional callback function for progress updates
             method: Network building method
             
         Returns:
@@ -131,7 +132,7 @@ class TemporalNetworkBuilder(WikipediaNetworkBuilder):
         })
         
         # Call parent build_network with temporal tracking
-        result = super().build_network(seeds, method)
+        result = super().build_network(seeds, progress_callback, method)
         
         # Create final snapshot
         final_snapshot = self._create_snapshot({

@@ -126,8 +126,14 @@ class WikipediaNetworkBuilder:
     async def _close_async_session(self):
         """Close the async session."""
         if self.async_session and not self.async_session.closed:
-            await self.async_session.close()
-            self.async_session = None
+            try:
+                await self.async_session.close()
+                # Wait for underlying connections to close
+                await asyncio.sleep(0.1)
+            except Exception as e:
+                self.logger.warning(f"Error closing async session: {e}")
+            finally:
+                self.async_session = None
 
     def _setup_logging(self):
         """Configure logging with better formatting."""
@@ -1561,12 +1567,8 @@ class WikipediaNetworkBuilder:
                         self.build_network_breadth_first_async(seeds, progress_callback)
                     )
                 finally:
-                    # Ensure session is properly closed
-                    if hasattr(self, 'async_session') and self.async_session:
-                        try:
-                            loop.run_until_complete(self._close_async_session())
-                        except Exception as e:
-                            self.logger.warning(f"Error closing async session: {e}")
+                    # Session cleanup is handled by the async method itself
+                    pass
             else:
                 self.logger.warning(
                     "Async disabled, falling back to sync breadth-first"
@@ -2212,7 +2214,7 @@ class WikipediaNetworkBuilder:
         except Exception as e:
             self.logger.error(f"Error creating influence propagation visualization: {e}")
 
-    def save_to_history(self, history_dir: str = "history"):
+    def save_to_history(self, history_dir: str = "outputs/history"):
         """
         Save current output files to a unique run directory within history folder.
 
@@ -2240,10 +2242,19 @@ class WikipediaNetworkBuilder:
         # List of files to archive
         files_to_archive = [
             "wiki_network_depth.html",
-            "wiki_network_communities.html",
+            "wiki_network_communities.html", 
             "communities.png",
             "wiki_network.graphml",
             "influence_propagation.png",
+            # Unified network files
+            "unified_network_depth_barnes_hut.html",
+            "unified_network_depth_circular.html",
+            "unified_network_depth_force_atlas2.html",
+            "unified_network_communities_barnes_hut.html",
+            "unified_network_communities_circular.html",
+            "unified_network_communities_force_atlas2.html",
+            "unified_communities.png",
+            "unified_network.graphml",
         ]
 
         archived_files = []
