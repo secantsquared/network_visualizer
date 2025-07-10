@@ -244,6 +244,182 @@ class TemporalNetworkBuilder(WikipediaNetworkBuilder):
         
         return result
     
+    def build_network_random_walk(self, seeds: List[str], 
+                                 progress_callback: Optional[callable] = None) -> nx.Graph:
+        """Override random walk method to add temporal tracking."""
+        # Create initial empty snapshot
+        self._create_snapshot({
+            'type': 'initial',
+            'seeds': seeds,
+            'method': 'random_walk',
+            'nodes_so_far': 0,
+            'edges_so_far': 0
+        })
+        
+        # Create a wrapper progress callback that also creates snapshots
+        def temporal_progress_callback(articles_processed: int, total_articles: int = None):
+            # Create snapshot if needed
+            if self._should_create_snapshot():
+                self._create_snapshot({
+                    'type': 'progress',
+                    'method': 'random_walk',
+                    'articles_processed': articles_processed,
+                    'total_articles': total_articles,
+                    'nodes_so_far': len(self.graph.nodes()),
+                    'edges_so_far': len(self.graph.edges())
+                })
+                self.last_snapshot_count = len(self.graph.nodes())
+            
+            # Call original callback if provided
+            if progress_callback:
+                progress_callback(articles_processed, total_articles)
+        
+        # Call parent method with our temporal callback
+        result = super().build_network_random_walk(seeds, temporal_progress_callback)
+        
+        # Create final snapshot
+        self._create_snapshot({
+            'type': 'final',
+            'method': 'random_walk',
+            'total_nodes': len(self.graph.nodes()),
+            'total_edges': len(self.graph.edges()),
+            'build_time': (datetime.now() - self.start_time).total_seconds() if self.start_time else 0
+        })
+        
+        return result
+    
+    def build_network_dfs(self, seeds: List[str], 
+                         progress_callback: Optional[callable] = None) -> nx.Graph:
+        """Override DFS method to add temporal tracking."""
+        # Create initial empty snapshot
+        self._create_snapshot({
+            'type': 'initial',
+            'seeds': seeds,
+            'method': 'dfs',
+            'nodes_so_far': 0,
+            'edges_so_far': 0
+        })
+        
+        # Create a wrapper progress callback that also creates snapshots
+        def temporal_progress_callback(articles_processed: int, total_articles: int = None):
+            # Create snapshot if needed
+            if self._should_create_snapshot():
+                self._create_snapshot({
+                    'type': 'progress',
+                    'method': 'dfs',
+                    'articles_processed': articles_processed,
+                    'total_articles': total_articles,
+                    'nodes_so_far': len(self.graph.nodes()),
+                    'edges_so_far': len(self.graph.edges())
+                })
+                self.last_snapshot_count = len(self.graph.nodes())
+            
+            # Call original callback if provided
+            if progress_callback:
+                progress_callback(articles_processed, total_articles)
+        
+        # Call parent method with our temporal callback
+        result = super().build_network_dfs(seeds, temporal_progress_callback)
+        
+        # Create final snapshot
+        self._create_snapshot({
+            'type': 'final',
+            'method': 'dfs',
+            'total_nodes': len(self.graph.nodes()),
+            'total_edges': len(self.graph.edges()),
+            'build_time': (datetime.now() - self.start_time).total_seconds() if self.start_time else 0
+        })
+        
+        return result
+    
+    def build_network_topic_focused(self, seeds: List[str], 
+                                   progress_callback: Optional[callable] = None) -> nx.Graph:
+        """Override topic-focused method to add temporal tracking."""
+        # Create initial empty snapshot
+        self._create_snapshot({
+            'type': 'initial',
+            'seeds': seeds,
+            'method': 'topic_focused',
+            'nodes_so_far': 0,
+            'edges_so_far': 0
+        })
+        
+        # Create a wrapper progress callback that also creates snapshots
+        def temporal_progress_callback(articles_processed: int, total_articles: int = None):
+            # Create snapshot if needed
+            if self._should_create_snapshot():
+                self._create_snapshot({
+                    'type': 'progress',
+                    'method': 'topic_focused',
+                    'articles_processed': articles_processed,
+                    'total_articles': total_articles,
+                    'nodes_so_far': len(self.graph.nodes()),
+                    'edges_so_far': len(self.graph.edges())
+                })
+                self.last_snapshot_count = len(self.graph.nodes())
+            
+            # Call original callback if provided
+            if progress_callback:
+                progress_callback(articles_processed, total_articles)
+        
+        # Call parent method with our temporal callback
+        result = super().build_network_topic_focused(seeds, temporal_progress_callback)
+        
+        # Create final snapshot
+        self._create_snapshot({
+            'type': 'final',
+            'method': 'topic_focused',
+            'total_nodes': len(self.graph.nodes()),
+            'total_edges': len(self.graph.edges()),
+            'build_time': (datetime.now() - self.start_time).total_seconds() if self.start_time else 0
+        })
+        
+        return result
+    
+    def build_network_hub_and_spoke(self, seeds: List[str], 
+                                   progress_callback: Optional[callable] = None) -> nx.Graph:
+        """Override hub-and-spoke method to add temporal tracking."""
+        # Create initial empty snapshot
+        self._create_snapshot({
+            'type': 'initial',
+            'seeds': seeds,
+            'method': 'hub_and_spoke',
+            'nodes_so_far': 0,
+            'edges_so_far': 0
+        })
+        
+        # Create a wrapper progress callback that also creates snapshots
+        def temporal_progress_callback(articles_processed: int, total_articles: int = None):
+            # Create snapshot if needed
+            if self._should_create_snapshot():
+                self._create_snapshot({
+                    'type': 'progress',
+                    'method': 'hub_and_spoke',
+                    'articles_processed': articles_processed,
+                    'total_articles': total_articles,
+                    'nodes_so_far': len(self.graph.nodes()),
+                    'edges_so_far': len(self.graph.edges())
+                })
+                self.last_snapshot_count = len(self.graph.nodes())
+            
+            # Call original callback if provided
+            if progress_callback:
+                progress_callback(articles_processed, total_articles)
+        
+        # Call parent method with our temporal callback
+        result = super().build_network_hub_and_spoke(seeds, temporal_progress_callback)
+        
+        # Create final snapshot
+        self._create_snapshot({
+            'type': 'final',
+            'method': 'hub_and_spoke',
+            'total_nodes': len(self.graph.nodes()),
+            'total_edges': len(self.graph.edges()),
+            'build_time': (datetime.now() - self.start_time).total_seconds() if self.start_time else 0
+        })
+        
+        return result
+    
     def get_temporal_analysis(self) -> TemporalNetworkAnalyzer:
         """Get the temporal analyzer with all snapshots."""
         return self.temporal_analyzer

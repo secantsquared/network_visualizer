@@ -743,6 +743,52 @@ class WikipediaNetworkBuilder:
         self.logger.info("=" * 60)
         return self.graph
 
+    def _add_article_to_graph(self, article: str, links: List[str], depth: int = 0) -> int:
+        """
+        Add an article and its links to the graph.
+        
+        This method serves as a centralized point for adding nodes and edges,
+        allowing subclasses to override for temporal tracking or other purposes.
+        
+        Args:
+            article: Article title to add
+            links: List of linked article titles
+            depth: Depth of the article in the search tree
+            
+        Returns:
+            Number of new nodes added
+        """
+        added_count = 0
+        
+        # Add the main article if not already present
+        if article not in self.graph:
+            self.graph.add_node(article, depth=depth, processed=True)
+            added_count += 1
+        else:
+            # Update processed status and depth if this is a better path
+            if self.graph.nodes[article].get('depth', float('inf')) > depth:
+                self.graph.nodes[article]['depth'] = depth
+            self.graph.nodes[article]['processed'] = True
+        
+        # Add linked articles and edges
+        for link in links:
+            if not self._should_filter_article(link):
+                # Add linked article if not present
+                if link not in self.graph:
+                    self.graph.add_node(link, depth=depth + 1, processed=False)
+                    added_count += 1
+                else:
+                    # Update depth if this is a better path
+                    current_depth = self.graph.nodes[link].get('depth', float('inf'))
+                    if current_depth > depth + 1:
+                        self.graph.nodes[link]['depth'] = depth + 1
+                
+                # Add edge if not present
+                if not self.graph.has_edge(article, link):
+                    self.graph.add_edge(article, link)
+        
+        return added_count
+
     def build_network_random_walk(
         self, seeds: List[str], progress_callback: Optional[callable] = None
     ) -> nx.DiGraph:
@@ -816,59 +862,64 @@ class WikipediaNetworkBuilder:
                     if links:
                         article_links[current_article] = links
 
-                        # Add article as processed
+                        # Add article and its links using centralized method
                         depth = (
                             self.graph.nodes[current_article].get("depth", 0)
                             if current_article in self.graph
                             else 0
                         )
-                        self.graph.add_node(
-                            current_article,
-                            depth=depth,
-                            processed=True,
-                            is_seed=current_article in valid_seeds,
-                        )
+                        
+                        # Use centralized method for temporal tracking
+                        self._add_article_to_graph(current_article, links, depth)
+                        
+                        # Mark as seed if applicable
+                        if current_article in valid_seeds:
+                            self.graph.nodes[current_article]['is_seed'] = True
+                        
                         self.visited.add(current_article)
                         articles_processed += 1
 
-                        # Add linked articles to graph and edges
-                        for target in links:
-                            if not self._should_filter_article(target):
-                                # Add target node if it doesn't exist
-                                if target not in self.graph:
-                                    self.graph.add_node(
-                                        target,
-                                        depth=depth + 1,
-                                        processed=False,
-                                        is_seed=False,
-                                    )
-                                # Add edge
-                                self.graph.add_edge(current_article, target)
-
+                        # Progress callback
                         if progress_callback:
-                            progress_callback(
-                                articles_processed, self.config.max_articles_to_process
-                            )
-                    else:
-                        # No links found, treat as processed to avoid infinite loops
-                        self.visited.add(current_article)
-                        article_links[current_article] = []
+                            progress_callback(articles_processed, self.config.max_articles_to_process)
 
-                # Choose next article for random walk
-                next_article = self._choose_next_article(
-                    current_article, article_links, valid_seeds
-                )
-                if next_article:
-                    current_article = next_article
-                    self.logger.debug(f"Step {step}: Moved to '{current_article}'")
+                # Select next article for the walk
+                # Try to continue from current article's links
+                available_links = []
+                if current_article in article_links:
+                    available_links = [
+                        link for link in article_links[current_article]
+                        if not self._should_filter_article(link)
+                    ]
+                
+                # Also consider links from other processed articles (exploration)
+                if len(available_links) == 0 or random.random() < self.config.exploration_bias:
+                    # Collect all available links from processed articles
+                    all_links = []
+                    for processed_article in self.visited:
+                        if processed_article in article_links:
+                            all_links.extend([
+                                link for link in article_links[processed_article]
+                                if not self._should_filter_article(link)
+                            ])
+                    
+                    if all_links:
+                        available_links = list(set(all_links))  # Remove duplicates
+                
+                # Choose next article
+                if available_links:
+                    current_article = random.choice(available_links)
+                    self.logger.debug(f"Step {step}: Moving to '{current_article}'")
                 else:
-                    # No valid next article, restart from a seed
+                    # No available links, restart from a seed
                     current_article = random.choice(valid_seeds)
-                    self.logger.debug(
-                        f"Step {step}: No valid next article, restarted at '{current_article}'"
-                    )
-
+                    self.logger.debug(f"Step {step}: No links available, restarted at '{current_article}'")
+                
                 pbar.update(1)
+                    
+                else:
+                    # No links found, treat as processed to avoid infinite loops
+                    self.visited.add(current_article)
 
         self.logger.info("=" * 60)
         self.logger.info(f"RANDOM WALK NETWORK BUILDING COMPLETE")
