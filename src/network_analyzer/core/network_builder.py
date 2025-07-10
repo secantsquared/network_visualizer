@@ -86,6 +86,27 @@ class WikipediaNetworkBuilder:
         # Auto-adjust parameters if target_network_size is specified
         if self.config.target_network_size:
             self._auto_adjust_parameters()
+            
+    def __del__(self):
+        """Ensure cleanup on destruction."""
+        if hasattr(self, 'async_session') and self.async_session and not self.async_session.closed:
+            # Try to close the session if event loop is still running
+            try:
+                import asyncio
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    # Schedule cleanup for later
+                    loop.create_task(self._close_async_session())
+                else:
+                    # Run cleanup synchronously
+                    loop.run_until_complete(self._close_async_session())
+            except Exception:
+                # If all else fails, just close the session synchronously
+                try:
+                    if hasattr(self.async_session, '_connector') and self.async_session._connector:
+                        self.async_session._connector._close()
+                except Exception:
+                    pass
 
     def _create_session(self) -> requests.Session:
         """Create a configured requests session."""
@@ -127,9 +148,13 @@ class WikipediaNetworkBuilder:
         """Close the async session."""
         if self.async_session and not self.async_session.closed:
             try:
+                # Close the session
                 await self.async_session.close()
-                # Wait for underlying connections to close
-                await asyncio.sleep(0.1)
+                # Wait longer for underlying connections to close
+                await asyncio.sleep(0.25)
+                # Force close the connector if it still exists
+                if hasattr(self.async_session, '_connector') and self.async_session._connector:
+                    await self.async_session._connector.close()
             except Exception as e:
                 self.logger.warning(f"Error closing async session: {e}")
             finally:
