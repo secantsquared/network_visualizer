@@ -1552,13 +1552,21 @@ class WikipediaNetworkBuilder:
             if self.config.async_enabled:
                 try:
                     loop = asyncio.get_event_loop()
-
                 except RuntimeError:
                     loop = asyncio.new_event_loop()
                     asyncio.set_event_loop(loop)
-                return loop.run_until_complete(
-                    self.build_network_breadth_first_async(seeds, progress_callback)
-                )
+                
+                try:
+                    return loop.run_until_complete(
+                        self.build_network_breadth_first_async(seeds, progress_callback)
+                    )
+                finally:
+                    # Ensure session is properly closed
+                    if hasattr(self, 'async_session') and self.async_session:
+                        try:
+                            loop.run_until_complete(self._close_async_session())
+                        except Exception as e:
+                            self.logger.warning(f"Error closing async session: {e}")
             else:
                 self.logger.warning(
                     "Async disabled, falling back to sync breadth-first"

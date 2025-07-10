@@ -375,6 +375,17 @@ class TemporalNetworkBuilder(WikipediaNetworkBuilder):
         plt.close(fig)
         return output_path
 
+    def create_evolution_dashboard(self, output_path: str = "temporal_network_dashboard.png") -> str:
+        """Create a comprehensive dashboard showing temporal network evolution."""
+        return self.temporal_analyzer.create_evolution_dashboard(output_path)
+
+    def create_evolution_visualization(self, output_path: str = "temporal_network_evolution.gif", 
+                                     color_by: str = "growth", fps: int = 2) -> str:
+        """Create animated visualization of network evolution."""
+        return self.temporal_analyzer.create_animated_visualization(
+            output_path, color_by=color_by, fps=fps
+        )
+
 
 def demo_temporal_network_building():
     """Demonstrate temporal network building."""
