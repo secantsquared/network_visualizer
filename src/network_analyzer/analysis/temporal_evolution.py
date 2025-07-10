@@ -305,14 +305,28 @@ class TemporalNetworkAnalyzer:
         # Prepare animation data
         self._prepare_animation_data(color_by)
         
+        # Log snapshot information for debugging
+        self.logger.info(f"Total snapshots: {len(self.snapshots)}")
+        non_empty_count = sum(1 for s in self.snapshots if len(s.nodes) > 0)
+        self.logger.info(f"Non-empty snapshots: {non_empty_count}")
+        if self.snapshots:
+            sizes = [len(s.nodes) for s in self.snapshots]
+            self.logger.info(f"Snapshot sizes: {sizes}")
+        
+        # Filter out empty snapshots for better visualization
+        non_empty_snapshots = [s for s in self.snapshots if len(s.nodes) > 0]
+        
+        if not non_empty_snapshots:
+            raise ValueError("No non-empty snapshots available for animation")
+        
         # Animation function
         def animate(frame):
             ax.clear()
             
-            if frame >= len(self.snapshots):
+            if frame >= len(non_empty_snapshots):
                 return
             
-            snapshot = self.snapshots[frame]
+            snapshot = non_empty_snapshots[frame]
             graph = snapshot.to_networkx()
             
             # Get nodes and edges present in this snapshot
@@ -351,12 +365,12 @@ class TemporalNetworkAnalyzer:
             ax.axis('off')
             
             # Add frame counter
-            ax.text(0.02, 0.98, f"Frame {frame + 1}/{len(self.snapshots)}", 
+            ax.text(0.02, 0.98, f"Frame {frame + 1}/{len(non_empty_snapshots)}", 
                    transform=ax.transAxes, fontsize=10, verticalalignment='top',
                    bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
         
         # Create animation
-        ani = animation.FuncAnimation(fig, animate, frames=len(self.snapshots), 
+        ani = animation.FuncAnimation(fig, animate, frames=len(non_empty_snapshots), 
                                     interval=1000//fps, repeat=True, blit=False)
         
         # Save animation
@@ -383,23 +397,29 @@ class TemporalNetworkAnalyzer:
         self.animation_data = {}
         
         if color_by == "growth":
-            # Track when each node first appears
+            # Track when each node first appears (only count non-empty snapshots)
             node_appearance = {}
+            non_empty_index = 0
             for i, snapshot in enumerate(self.snapshots):
-                for node in snapshot.nodes:
-                    if node not in node_appearance:
-                        node_appearance[node] = i
+                if len(snapshot.nodes) > 0:
+                    for node in snapshot.nodes:
+                        if node not in node_appearance:
+                            node_appearance[node] = non_empty_index
+                    non_empty_index += 1
             self.animation_data['node_appearance'] = node_appearance
         
         elif color_by == "centrality":
-            # Compute centrality for each snapshot
+            # Compute centrality for each snapshot (skip empty ones)
             centrality_data = []
             for snapshot in self.snapshots:
                 graph = snapshot.to_networkx()
-                try:
-                    pagerank = nx.pagerank(graph)
-                    centrality_data.append(pagerank)
-                except:
+                if len(graph.nodes()) > 0:
+                    try:
+                        pagerank = nx.pagerank(graph)
+                        centrality_data.append(pagerank)
+                    except:
+                        centrality_data.append({})
+                else:
                     centrality_data.append({})
             self.animation_data['centrality'] = centrality_data
         
@@ -415,11 +435,14 @@ class TemporalNetworkAnalyzer:
         if color_by == "growth":
             # Color based on when node appeared
             node_appearance = self.animation_data.get('node_appearance', {})
+            max_frames = sum(1 for s in self.snapshots if len(s.nodes) > 0)
+            max_frames = max(max_frames, 1)  # Avoid division by zero
+            
             for node in nodes:
                 appearance_frame = node_appearance.get(node, 0)
                 age = frame - appearance_frame
                 # Newer nodes are redder, older nodes are bluer
-                intensity = max(0, 1 - age / len(self.snapshots))
+                intensity = max(0, 1 - age / max_frames)
                 colors.append(self.color_maps['growth'](intensity))
         
         elif color_by == "centrality":

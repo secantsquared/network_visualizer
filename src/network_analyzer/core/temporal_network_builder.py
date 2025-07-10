@@ -53,6 +53,9 @@ class TemporalNetworkBuilder(WikipediaNetworkBuilder):
         
         # State for creating snapshots
         self.last_snapshot_count = 0
+        
+        # Target minimum number of snapshots for good visualization
+        self.target_min_snapshots = 15
     
     def _create_snapshot(self, metadata: Dict = None) -> NetworkSnapshot:
         """Create a snapshot of the current network state."""
@@ -80,12 +83,35 @@ class TemporalNetworkBuilder(WikipediaNetworkBuilder):
         
         return snapshot
     
+    def _get_adaptive_snapshot_interval(self) -> int:
+        """Calculate adaptive snapshot interval based on network size."""
+        # Estimate final network size from max_articles_to_process
+        estimated_final_size = getattr(self.config, 'max_articles_to_process', 100)
+        
+        # Calculate interval to get target number of snapshots
+        if estimated_final_size <= 30:
+            # For small networks, create very frequent snapshots
+            return max(1, estimated_final_size // 15)  # ~15 snapshots
+        elif estimated_final_size <= 100:
+            # For medium networks, use moderate interval
+            return max(2, estimated_final_size // 20)  # ~20 snapshots
+        else:
+            # For large networks, use the original interval
+            return self.snapshot_interval
+    
     def _should_create_snapshot(self) -> bool:
         """Determine if a snapshot should be created."""
         current_node_count = len(self.graph.nodes())
         
+        # Skip if network is still empty
+        if current_node_count == 0:
+            return False
+        
+        # Use adaptive snapshot interval for better coverage
+        adaptive_interval = self._get_adaptive_snapshot_interval()
+        
         # Create snapshot if we've processed enough new nodes
-        if current_node_count >= self.last_snapshot_count + self.snapshot_interval:
+        if current_node_count >= self.last_snapshot_count + adaptive_interval:
             return True
         
         # Create snapshot if significant time has passed
@@ -124,12 +150,7 @@ class TemporalNetworkBuilder(WikipediaNetworkBuilder):
         """
         self.start_time = datetime.now()
         
-        # Create initial snapshot
-        initial_snapshot = self._create_snapshot({
-            'type': 'initial',
-            'seeds': seeds,
-            'method': method
-        })
+        # Don't create initial empty snapshot - will be created when first node is added
         
         # Call parent build_network with temporal tracking
         result = super().build_network(seeds, progress_callback, method)
@@ -149,6 +170,16 @@ class TemporalNetworkBuilder(WikipediaNetworkBuilder):
         # Track node addition
         if article not in self.graph:
             self._track_node_addition(article, depth)
+        
+        # Create snapshot before adding nodes if this is the first addition
+        if len(self.graph.nodes()) == 0:
+            self._create_snapshot({
+                'type': 'initial',
+                'current_article': article,
+                'depth': depth,
+                'nodes_so_far': 0,
+                'edges_so_far': 0
+            })
         
         # Call parent method
         added_count = super()._add_article_to_graph(article, links, depth)
@@ -171,6 +202,47 @@ class TemporalNetworkBuilder(WikipediaNetworkBuilder):
             self.last_snapshot_count = len(self.graph.nodes())
         
         return added_count
+    
+    async def build_network_breadth_first_async(self, seeds: List[str], 
+                                               progress_callback: Optional[callable] = None) -> nx.Graph:
+        """Override async method to add temporal tracking."""
+        # Create initial empty snapshot
+        self._create_snapshot({
+            'type': 'initial',
+            'seeds': seeds,
+            'nodes_so_far': 0,
+            'edges_so_far': 0
+        })
+        
+        # Create a wrapper progress callback that also creates snapshots
+        def temporal_progress_callback(articles_processed: int, total_articles: int = None):
+            # Create snapshot if needed
+            if self._should_create_snapshot():
+                self._create_snapshot({
+                    'type': 'progress',
+                    'articles_processed': articles_processed,
+                    'total_articles': total_articles,
+                    'nodes_so_far': len(self.graph.nodes()),
+                    'edges_so_far': len(self.graph.edges())
+                })
+                self.last_snapshot_count = len(self.graph.nodes())
+            
+            # Call original callback if provided
+            if progress_callback:
+                progress_callback(articles_processed, total_articles)
+        
+        # Call parent method with our temporal callback
+        result = await super().build_network_breadth_first_async(seeds, temporal_progress_callback)
+        
+        # Create final snapshot
+        self._create_snapshot({
+            'type': 'final',
+            'total_nodes': len(self.graph.nodes()),
+            'total_edges': len(self.graph.edges()),
+            'build_time': (datetime.now() - self.start_time).total_seconds() if self.start_time else 0
+        })
+        
+        return result
     
     def get_temporal_analysis(self) -> TemporalNetworkAnalyzer:
         """Get the temporal analyzer with all snapshots."""
