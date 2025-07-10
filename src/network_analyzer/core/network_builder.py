@@ -916,10 +916,6 @@ class WikipediaNetworkBuilder:
                     self.logger.debug(f"Step {step}: No links available, restarted at '{current_article}'")
                 
                 pbar.update(1)
-                    
-                else:
-                    # No links found, treat as processed to avoid infinite loops
-                    self.visited.add(current_article)
 
         self.logger.info("=" * 60)
         self.logger.info(f"RANDOM WALK NETWORK BUILDING COMPLETE")
