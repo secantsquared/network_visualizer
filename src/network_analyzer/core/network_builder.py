@@ -74,7 +74,7 @@ class WikipediaNetworkBuilder:
 
         # Rate limiting components
         self.rate_limiter = RateLimiter(self.config.rate_limit_delay)
-        
+
         # Async components
         self.async_session: Optional[ClientSession] = None
         self.async_rate_limiter = AsyncRateLimiter(self.config.rate_limit_delay)
@@ -86,13 +86,18 @@ class WikipediaNetworkBuilder:
         # Auto-adjust parameters if target_network_size is specified
         if self.config.target_network_size:
             self._auto_adjust_parameters()
-            
+
     def __del__(self):
         """Ensure cleanup on destruction."""
-        if hasattr(self, 'async_session') and self.async_session and not self.async_session.closed:
+        if (
+            hasattr(self, "async_session")
+            and self.async_session
+            and not self.async_session.closed
+        ):
             # Try to close the session if event loop is still running
             try:
                 import asyncio
+
                 loop = asyncio.get_event_loop()
                 if loop.is_running():
                     # Schedule cleanup for later
@@ -103,7 +108,10 @@ class WikipediaNetworkBuilder:
             except Exception:
                 # If all else fails, just close the session synchronously
                 try:
-                    if hasattr(self.async_session, '_connector') and self.async_session._connector:
+                    if (
+                        hasattr(self.async_session, "_connector")
+                        and self.async_session._connector
+                    ):
                         self.async_session._connector._close()
                 except Exception:
                     pass
@@ -153,7 +161,10 @@ class WikipediaNetworkBuilder:
                 # Wait longer for underlying connections to close
                 await asyncio.sleep(0.25)
                 # Force close the connector if it still exists
-                if hasattr(self.async_session, '_connector') and self.async_session._connector:
+                if (
+                    hasattr(self.async_session, "_connector")
+                    and self.async_session._connector
+                ):
                     await self.async_session._connector.close()
             except Exception as e:
                 self.logger.warning(f"Error closing async session: {e}")
@@ -743,33 +754,35 @@ class WikipediaNetworkBuilder:
         self.logger.info("=" * 60)
         return self.graph
 
-    def _add_article_to_graph(self, article: str, links: List[str], depth: int = 0) -> int:
+    def _add_article_to_graph(
+        self, article: str, links: List[str], depth: int = 0
+    ) -> int:
         """
         Add an article and its links to the graph.
-        
+
         This method serves as a centralized point for adding nodes and edges,
         allowing subclasses to override for temporal tracking or other purposes.
-        
+
         Args:
             article: Article title to add
             links: List of linked article titles
             depth: Depth of the article in the search tree
-            
+
         Returns:
             Number of new nodes added
         """
         added_count = 0
-        
+
         # Add the main article if not already present
         if article not in self.graph:
             self.graph.add_node(article, depth=depth, processed=True)
             added_count += 1
         else:
             # Update processed status and depth if this is a better path
-            if self.graph.nodes[article].get('depth', float('inf')) > depth:
-                self.graph.nodes[article]['depth'] = depth
-            self.graph.nodes[article]['processed'] = True
-        
+            if self.graph.nodes[article].get("depth", float("inf")) > depth:
+                self.graph.nodes[article]["depth"] = depth
+            self.graph.nodes[article]["processed"] = True
+
         # Add linked articles and edges
         for link in links:
             if not self._should_filter_article(link):
@@ -779,14 +792,14 @@ class WikipediaNetworkBuilder:
                     added_count += 1
                 else:
                     # Update depth if this is a better path
-                    current_depth = self.graph.nodes[link].get('depth', float('inf'))
+                    current_depth = self.graph.nodes[link].get("depth", float("inf"))
                     if current_depth > depth + 1:
-                        self.graph.nodes[link]['depth'] = depth + 1
-                
+                        self.graph.nodes[link]["depth"] = depth + 1
+
                 # Add edge if not present
                 if not self.graph.has_edge(article, link):
                     self.graph.add_edge(article, link)
-        
+
         return added_count
 
     def build_network_random_walk(
@@ -868,44 +881,53 @@ class WikipediaNetworkBuilder:
                             if current_article in self.graph
                             else 0
                         )
-                        
+
                         # Use centralized method for temporal tracking
                         self._add_article_to_graph(current_article, links, depth)
-                        
+
                         # Mark as seed if applicable
                         if current_article in valid_seeds:
-                            self.graph.nodes[current_article]['is_seed'] = True
-                        
+                            self.graph.nodes[current_article]["is_seed"] = True
+
                         self.visited.add(current_article)
                         articles_processed += 1
 
                         # Progress callback
                         if progress_callback:
-                            progress_callback(articles_processed, self.config.max_articles_to_process)
+                            progress_callback(
+                                articles_processed, self.config.max_articles_to_process
+                            )
 
                 # Select next article for the walk
                 # Try to continue from current article's links
                 available_links = []
                 if current_article in article_links:
                     available_links = [
-                        link for link in article_links[current_article]
+                        link
+                        for link in article_links[current_article]
                         if not self._should_filter_article(link)
                     ]
-                
+
                 # Also consider links from other processed articles (exploration)
-                if len(available_links) == 0 or random.random() < self.config.exploration_bias:
+                if (
+                    len(available_links) == 0
+                    or random.random() < self.config.exploration_bias
+                ):
                     # Collect all available links from processed articles
                     all_links = []
                     for processed_article in self.visited:
                         if processed_article in article_links:
-                            all_links.extend([
-                                link for link in article_links[processed_article]
-                                if not self._should_filter_article(link)
-                            ])
-                    
+                            all_links.extend(
+                                [
+                                    link
+                                    for link in article_links[processed_article]
+                                    if not self._should_filter_article(link)
+                                ]
+                            )
+
                     if all_links:
                         available_links = list(set(all_links))  # Remove duplicates
-                
+
                 # Choose next article
                 if available_links:
                     current_article = random.choice(available_links)
@@ -913,8 +935,10 @@ class WikipediaNetworkBuilder:
                 else:
                     # No available links, restart from a seed
                     current_article = random.choice(valid_seeds)
-                    self.logger.debug(f"Step {step}: No links available, restarted at '{current_article}'")
-                
+                    self.logger.debug(
+                        f"Step {step}: No links available, restarted at '{current_article}'"
+                    )
+
                 pbar.update(1)
 
         self.logger.info("=" * 60)
@@ -1633,7 +1657,7 @@ class WikipediaNetworkBuilder:
                 except RuntimeError:
                     loop = asyncio.new_event_loop()
                     asyncio.set_event_loop(loop)
-                
+
                 try:
                     return loop.run_until_complete(
                         self.build_network_breadth_first_async(seeds, progress_callback)
@@ -1878,19 +1902,22 @@ class WikipediaNetworkBuilder:
         # Configure physics using ForceDirectedVisualizer if available
         if physics:
             try:
-                from ..visualization.force_directed_visualizer import ForceDirectedVisualizer
+                from ..visualization.force_directed_visualizer import (
+                    ForceDirectedVisualizer,
+                )
+
                 visualizer = ForceDirectedVisualizer(self.graph)
-                
+
                 # Use force-directed visualizer for enhanced physics
                 visualizer.visualize(
                     output_path=output_path,
                     physics_type=physics_engine,
                     color_by=color_by,
                     custom_params=custom_physics_params,
-                    **default_params
+                    **default_params,
                 )
                 return  # Exit early since ForceDirectedVisualizer handles everything
-                
+
             except ImportError:
                 # Fallback to original physics configuration
                 net.barnes_hut(
@@ -1929,7 +1956,9 @@ class WikipediaNetworkBuilder:
                 title_info = f"{node}\nDepth: {depth}\nCommunity: {community}\nDegree: {self.graph.degree(node)}"
             else:
                 color = color_map.get(depth, "#95a5a6")
-                title_info = f"{node}\nDepth: {depth}\nDegree: {self.graph.degree(node)}"
+                title_info = (
+                    f"{node}\nDepth: {depth}\nDegree: {self.graph.degree(node)}"
+                )
 
             # Calculate node size based on degree
             degree = self.graph.degree(node)
@@ -2041,7 +2070,7 @@ class WikipediaNetworkBuilder:
         )
 
         plt.title(f"Community Structure ({len(self.communities)} communities)")
-        
+
         # Create a custom legend with community names instead of overlaying text on graph
         legend_elements = []
         for i, community in enumerate(self.communities):
@@ -2049,18 +2078,32 @@ class WikipediaNetworkBuilder:
             if community_nodes:
                 # Find the most connected node in this community as representative
                 degree_dict = dict(self.graph.degree())
-                representative_node = max(community_nodes, key=lambda x: degree_dict.get(x, 0))
-                
+                representative_node = max(
+                    community_nodes, key=lambda x: degree_dict.get(x, 0)
+                )
+
                 # Create legend entry with community color and representative node name
                 legend_elements.append(
-                    plt.Line2D([0], [0], marker='o', color='w', 
-                              markerfacecolor=community_colors[i], markersize=10,
-                              label=f"Community {i+1}: {representative_node}")
+                    plt.Line2D(
+                        [0],
+                        [0],
+                        marker="o",
+                        color="w",
+                        markerfacecolor=community_colors[i],
+                        markersize=10,
+                        label=f"Community {i+1}: {representative_node}",
+                    )
                 )
-        
+
         # Position legend outside the plot area
-        plt.legend(handles=legend_elements, bbox_to_anchor=(1.05, 1), loc="upper left", 
-                  frameon=True, fancybox=True, shadow=True)
+        plt.legend(
+            handles=legend_elements,
+            bbox_to_anchor=(1.05, 1),
+            loc="upper left",
+            frameon=True,
+            fancybox=True,
+            shadow=True,
+        )
         plt.axis("off")
         plt.tight_layout()
         plt.savefig(output_path, dpi=300, bbox_inches="tight")
@@ -2136,16 +2179,40 @@ class WikipediaNetworkBuilder:
         """Save the graph to a file (GraphML format)."""
         path = Path(filepath)
         if path.suffix == ".graphml":
-            nx.write_graphml(self.graph, filepath)
+            self._save_graphml_with_datetime_conversion(filepath)
         elif path.suffix == ".json":
             # Save as JSON for custom processing
             data = nx.node_link_data(self.graph)
             with open(filepath, "w") as f:
-                json.dump(data, f, indent=2)
+                json.dump(data, f, indent=2, default=str)
         else:
             # Default to GraphML
-            nx.write_graphml(self.graph, filepath + ".graphml")
+            self._save_graphml_with_datetime_conversion(filepath + ".graphml")
         self.logger.info(f"Graph saved to {filepath}")
+
+    def _save_graphml_with_datetime_conversion(self, filepath: str):
+        """Save graph to GraphML format, converting datetime objects to strings."""
+        from datetime import datetime
+
+        # Create a copy of the graph to avoid modifying the original
+        graph_copy = self.graph.copy()
+
+        # Convert datetime objects to strings in node attributes
+        for node in graph_copy.nodes():
+            node_attrs = graph_copy.nodes[node]
+            for attr_name, attr_value in node_attrs.items():
+                if isinstance(attr_value, datetime):
+                    node_attrs[attr_name] = attr_value.isoformat()
+
+        # Convert datetime objects to strings in edge attributes
+        for edge in graph_copy.edges():
+            edge_attrs = graph_copy.edges[edge]
+            for attr_name, attr_value in edge_attrs.items():
+                if isinstance(attr_value, datetime):
+                    edge_attrs[attr_name] = attr_value.isoformat()
+
+        # Save the modified graph
+        nx.write_graphml(graph_copy, filepath)
 
     def load_graph(self, filepath: str):
         """Load a previously saved graph."""
@@ -2159,132 +2226,158 @@ class WikipediaNetworkBuilder:
         self.visited = set(self.graph.nodes())
         self.logger.info(f"Graph loaded from {filepath}")
 
-    def analyze_influence_propagation(self, seed_nodes: List[str] = None, 
-                                    model: str = "independent_cascade", 
-                                    num_simulations: int = 100) -> Dict:
+    def analyze_influence_propagation(
+        self,
+        seed_nodes: List[str] = None,
+        model: str = "independent_cascade",
+        num_simulations: int = 100,
+    ) -> Dict:
         """
         Analyze influence propagation in the network.
-        
+
         Args:
             seed_nodes: Initial nodes to start propagation from
             model: Propagation model ("independent_cascade" or "linear_threshold")
             num_simulations: Number of Monte Carlo simulations
-            
+
         Returns:
             Dictionary with influence propagation results
         """
         try:
-            from ..analysis.influence_propagation import InfluencePropagationSimulator, PropagationConfig, PropagationModel
-            
+            from ..analysis.influence_propagation import (
+                InfluencePropagationSimulator,
+                PropagationConfig,
+                PropagationModel,
+            )
+
             # Use seed nodes or find optimal ones
             if seed_nodes is None:
                 # Use top PageRank nodes as seeds
                 pagerank = nx.pagerank(self.graph)
                 seed_nodes = sorted(pagerank.keys(), key=pagerank.get, reverse=True)[:3]
-            
+
             # Filter valid seed nodes
             valid_seeds = [node for node in seed_nodes if node in self.graph.nodes()]
             if not valid_seeds:
                 self.logger.warning("No valid seed nodes found")
                 return {}
-            
+
             # Configure simulation
-            model_enum = PropagationModel.INDEPENDENT_CASCADE if model == "independent_cascade" else PropagationModel.LINEAR_THRESHOLD
+            model_enum = (
+                PropagationModel.INDEPENDENT_CASCADE
+                if model == "independent_cascade"
+                else PropagationModel.LINEAR_THRESHOLD
+            )
             config = PropagationConfig(
                 model=model_enum,
                 num_simulations=num_simulations,
                 activation_probability=0.15,
-                verbose=False
+                verbose=False,
             )
-            
+
             # Create simulator
             simulator = InfluencePropagationSimulator(self.graph, config)
-            
+
             # Run Monte Carlo simulation
             mc_results = simulator.monte_carlo_simulation(valid_seeds)
-            
+
             # Find optimal seeds for comparison
             optimal_seeds = simulator.find_optimal_seeds(len(valid_seeds), "greedy")
             optimal_results = simulator.monte_carlo_simulation(optimal_seeds)
-            
+
             # Compare different strategies
             strategy_comparison = simulator.compare_seed_strategies(len(valid_seeds))
-            
+
             # Analyze network vulnerability
             vulnerability = simulator.analyze_network_vulnerability([1, 2, 3, 5])
-            
+
             return {
-                'selected_seeds': {
-                    'nodes': valid_seeds,
-                    'mean_influence': mc_results['mean_influence'],
-                    'activation_rate': mc_results['mean_activation_rate'],
-                    'most_influenced': mc_results['most_frequently_activated'][:10]
+                "selected_seeds": {
+                    "nodes": valid_seeds,
+                    "mean_influence": mc_results["mean_influence"],
+                    "activation_rate": mc_results["mean_activation_rate"],
+                    "most_influenced": mc_results["most_frequently_activated"][:10],
                 },
-                'optimal_seeds': {
-                    'nodes': optimal_seeds,
-                    'mean_influence': optimal_results['mean_influence'],
-                    'activation_rate': optimal_results['mean_activation_rate'],
-                    'most_influenced': optimal_results['most_frequently_activated'][:10]
+                "optimal_seeds": {
+                    "nodes": optimal_seeds,
+                    "mean_influence": optimal_results["mean_influence"],
+                    "activation_rate": optimal_results["mean_activation_rate"],
+                    "most_influenced": optimal_results["most_frequently_activated"][
+                        :10
+                    ],
                 },
-                'strategy_comparison': strategy_comparison,
-                'vulnerability_analysis': vulnerability,
-                'model_used': model,
-                'num_simulations': num_simulations
+                "strategy_comparison": strategy_comparison,
+                "vulnerability_analysis": vulnerability,
+                "model_used": model,
+                "num_simulations": num_simulations,
             }
-            
+
         except ImportError:
             self.logger.error("Influence propagation module not found")
             return {}
         except Exception as e:
             self.logger.error(f"Error in influence propagation analysis: {e}")
             return {}
-    
-    def visualize_influence_propagation(self, seeds: List[str] = None, 
-                                      model: str = "independent_cascade",
-                                      output_path: str = "influence_propagation.png"):
+
+    def visualize_influence_propagation(
+        self,
+        seeds: List[str] = None,
+        model: str = "independent_cascade",
+        output_path: str = "influence_propagation.png",
+    ):
         """
         Create visualization of influence propagation.
-        
+
         Args:
             seeds: Seed nodes for propagation
             model: Propagation model to use
             output_path: Output file path
         """
         try:
-            from ..analysis.influence_propagation import InfluencePropagationSimulator, PropagationConfig, PropagationModel
-            
+            from ..analysis.influence_propagation import (
+                InfluencePropagationSimulator,
+                PropagationConfig,
+                PropagationModel,
+            )
+
             # Use provided seeds or find optimal ones
             if seeds is None:
                 pagerank = nx.pagerank(self.graph)
                 seeds = sorted(pagerank.keys(), key=pagerank.get, reverse=True)[:3]
-            
+
             # Filter valid seeds
             valid_seeds = [node for node in seeds if node in self.graph.nodes()]
             if not valid_seeds:
                 self.logger.warning("No valid seed nodes for propagation visualization")
                 return
-            
+
             # Configure simulation
-            model_enum = PropagationModel.INDEPENDENT_CASCADE if model == "independent_cascade" else PropagationModel.LINEAR_THRESHOLD
-            config = PropagationConfig(
-                model=model_enum,
-                activation_probability=0.15,
-                verbose=False
+            model_enum = (
+                PropagationModel.INDEPENDENT_CASCADE
+                if model == "independent_cascade"
+                else PropagationModel.LINEAR_THRESHOLD
             )
-            
+            config = PropagationConfig(
+                model=model_enum, activation_probability=0.15, verbose=False
+            )
+
             # Create simulator and run single simulation
             simulator = InfluencePropagationSimulator(self.graph, config)
             result = simulator.simulate_propagation(valid_seeds)
-            
+
             # Create visualization
             simulator.visualize_propagation(result, output_path)
-            
-            self.logger.info(f"Influence propagation visualization saved to {output_path}")
-            
+
+            self.logger.info(
+                f"Influence propagation visualization saved to {output_path}"
+            )
+
         except ImportError:
             self.logger.error("Influence propagation module not found")
         except Exception as e:
-            self.logger.error(f"Error creating influence propagation visualization: {e}")
+            self.logger.error(
+                f"Error creating influence propagation visualization: {e}"
+            )
 
     def save_to_history(self, history_dir: str = "outputs/history"):
         """
@@ -2314,7 +2407,7 @@ class WikipediaNetworkBuilder:
         # List of files to archive
         files_to_archive = [
             "wiki_network_depth.html",
-            "wiki_network_communities.html", 
+            "wiki_network_communities.html",
             "communities.png",
             "wiki_network.graphml",
             "influence_propagation.png",
