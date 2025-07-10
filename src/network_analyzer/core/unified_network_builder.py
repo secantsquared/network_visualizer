@@ -63,6 +63,17 @@ class UnifiedNetworkBuilder(WikipediaNetworkBuilder):
                 raise ValueError("coursera_dataset_path required for Coursera data source")
             return create_data_source(self.config, "coursera", dataset_path=dataset_path)
         
+        elif source_type == "reddit":
+            # Extract Reddit credentials from kwargs or config
+            client_id = kwargs.get('reddit_client_id') or self.config.reddit_client_id
+            client_secret = kwargs.get('reddit_client_secret') or self.config.reddit_client_secret
+            user_agent = kwargs.get('reddit_user_agent') or self.config.reddit_user_agent
+            
+            return create_data_source(self.config, "reddit", 
+                                    client_id=client_id, 
+                                    client_secret=client_secret, 
+                                    user_agent=user_agent)
+        
         elif source_type == "hybrid":
             # Create multiple sources for hybrid mode
             sources = {}
@@ -74,6 +85,18 @@ class UnifiedNetworkBuilder(WikipediaNetworkBuilder):
             if kwargs.get('coursera_dataset_path') or self.config.coursera_dataset_path:
                 dataset_path = kwargs.get('coursera_dataset_path') or self.config.coursera_dataset_path
                 sources["coursera"] = create_data_source(self.config, "coursera", dataset_path=dataset_path)
+            
+            # Add Reddit if credentials provided
+            if (kwargs.get('reddit_client_id') or self.config.reddit_client_id) and \
+               (kwargs.get('reddit_client_secret') or self.config.reddit_client_secret) and \
+               (kwargs.get('reddit_user_agent') or self.config.reddit_user_agent):
+                client_id = kwargs.get('reddit_client_id') or self.config.reddit_client_id
+                client_secret = kwargs.get('reddit_client_secret') or self.config.reddit_client_secret
+                user_agent = kwargs.get('reddit_user_agent') or self.config.reddit_user_agent
+                sources["reddit"] = create_data_source(self.config, "reddit",
+                                                     client_id=client_id,
+                                                     client_secret=client_secret,
+                                                     user_agent=user_agent)
             
             hybrid_source = create_data_source(self.config, "hybrid", sources=sources)
             hybrid_source.set_primary_source(self.config.primary_data_source)

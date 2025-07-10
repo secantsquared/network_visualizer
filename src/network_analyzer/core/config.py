@@ -53,9 +53,18 @@ class NetworkConfig:
     hub_depth_limit: int = 2
 
     # Data source parameters
-    data_source_type: str = "wikipedia"  # "wikipedia", "coursera", "hybrid"
+    data_source_type: str = "wikipedia"  # "wikipedia", "coursera", "hybrid", "reddit"
     primary_data_source: str = "wikipedia"  # For hybrid mode
     coursera_dataset_path: Optional[str] = None
+    
+    # Reddit-specific parameters
+    reddit_client_id: Optional[str] = None
+    reddit_client_secret: Optional[str] = None
+    reddit_user_agent: Optional[str] = None
+    reddit_network_type: str = "subreddit"  # "subreddit", "user", "discussion"
+    reddit_max_posts: int = 100
+    reddit_max_comments: int = 50
+    reddit_time_filter: str = "month"  # "all", "year", "month", "week", "day", "hour"
     
     # Force-directed visualization parameters
     physics_engine: str = "barnes_hut"  # "barnes_hut", "force_atlas2", "hierarchical", "circular", "organic"

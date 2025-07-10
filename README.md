@@ -4,7 +4,7 @@ A powerful Python tool for building and analyzing knowledge networks from Wikipe
 
 ## Features
 
-- **Multi-source Network Building**: Build networks from Wikipedia articles and publicly available Coursera course data from Kaggle
+- **Multi-source Network Building**: Build networks from Wikipedia articles, Reddit communities, and publicly available Coursera course data from Kaggle
 - **Multiple Network Construction Methods**:
   - Breadth-first search (sync/async)
   - Random walk with restart
@@ -99,6 +99,9 @@ network-analyzer
 
 # Multi-source networks
 network-analyzer-unified
+
+# Reddit networks
+network-analyzer-reddit
 ```
 
 ## Project Structure
@@ -220,12 +223,53 @@ Models how information spreads through the network using:
 - Intelligent filtering of disambiguation pages
 - Configurable link extraction
 
+### Reddit
+
+- Uses Reddit API (PRAW) for real-time data
+- Support for subreddit, user, and discussion networks
+- Configurable time filters and data limits
+- **Setup**: Requires Reddit API credentials (see setup instructions below)
+
 ### Coursera Courses
 
 - Skill-based relationship mapping
 - Course metadata integration
 - Learning path analysis
 - **Dataset**: Uses the publicly available [Coursera course dataset](https://www.kaggle.com/datasets/azraimohamad/coursera-course-data?select=coursera_course_dataset_v3.csv) from Kaggle
+
+## Reddit API Setup
+
+To use Reddit data sources, you need Reddit API credentials:
+
+1. **Create a Reddit App**:
+   - Go to https://www.reddit.com/prefs/apps
+   - Click "Create App" or "Create Another App"
+   - Choose "script" for personal use
+   - Fill in the required fields
+
+2. **Set Your Credentials** (choose one method):
+
+   **Option 1: Environment Variables**
+   ```bash
+   export REDDIT_CLIENT_ID="your_client_id"
+   export REDDIT_CLIENT_SECRET="your_client_secret"
+   export REDDIT_USER_AGENT="your_app_name:v1.0 (by /u/yourusername)"
+   ```
+
+   **Option 2: .env File**
+   ```bash
+   # Create .env file in project root
+   cp .env.template .env
+   # Edit .env file with your credentials
+   ```
+
+   **Option 3: Shell Profile**
+   ```bash
+   # Add to ~/.bashrc, ~/.zshrc, etc.
+   export REDDIT_CLIENT_ID="your_client_id"
+   export REDDIT_CLIENT_SECRET="your_client_secret"
+   export REDDIT_USER_AGENT="your_app_name:v1.0 (by /u/yourusername)"
+   ```
 
 ## Contributing
 
