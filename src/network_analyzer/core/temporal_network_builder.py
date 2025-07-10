@@ -248,6 +248,87 @@ class TemporalNetworkBuilder(WikipediaNetworkBuilder):
         """Get the temporal analyzer with all snapshots."""
         return self.temporal_analyzer
     
+    def save_to_history(self, history_dir: str = "outputs/history"):
+        """
+        Save current temporal output files to a unique run directory within history folder.
+        
+        Args:
+            history_dir: Directory name for storing history files
+        """
+        from pathlib import Path
+        import shutil
+        
+        # Create history directory if it doesn't exist
+        history_path = Path(history_dir)
+        history_path.mkdir(exist_ok=True, parents=True)
+        
+        # Find the next available run number
+        run_number = 1
+        while True:
+            run_dir = history_path / f"temporal_run{run_number}"
+            if not run_dir.exists():
+                break
+            run_number += 1
+        
+        # Create the run directory
+        run_dir.mkdir(exist_ok=True)
+        
+        # Generate timestamp for metadata
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        # List of temporal files to archive
+        files_to_archive = [
+            "temporal_network_dashboard.png",
+            "temporal_network_depth.html",
+            "temporal_network_communities.html",
+            "temporal_communities.png",
+            "temporal_network.graphml",
+            "temporal_network_evolution.gif",
+            "temporal_growth_metrics.gif",
+            "temporal_network_data.json",
+            "temporal_network_data_extended.json",
+            # Also include test files if they exist
+            "test_temporal_evolution.gif",
+            "test_temporal_dashboard.png",
+        ]
+        
+        archived_files = []
+        
+        for filename in files_to_archive:
+            source_path = Path(filename)
+            if source_path.exists():
+                # Keep original filename
+                dest_path = run_dir / filename
+                
+                # Copy file to run directory
+                try:
+                    shutil.copy2(source_path, dest_path)
+                    archived_files.append(str(dest_path))
+                    self.logger.info(f"Archived {filename} -> {dest_path}")
+                except Exception as e:
+                    self.logger.warning(f"Failed to archive {filename}: {e}")
+        
+        # Create a metadata file with timestamp and run info
+        metadata_path = run_dir / "temporal_run_info.txt"
+        with open(metadata_path, "w") as f:
+            f.write(f"Temporal Network Run: {run_number}\n")
+            f.write(f"Timestamp: {timestamp}\n")
+            f.write(f"Total snapshots: {len(self.snapshots)}\n")
+            f.write(f"Network size: {len(self.graph.nodes())} nodes, {len(self.graph.edges())} edges\n")
+            f.write(f"Files archived: {len(archived_files)}\n")
+            f.write(f"Files:\n")
+            for file in archived_files:
+                f.write(f"  - {Path(file).name}\n")
+        
+        if archived_files:
+            self.logger.info(
+                f"Successfully archived {len(archived_files)} temporal files to {run_dir}/"
+            )
+            return archived_files, str(run_dir)
+        else:
+            self.logger.warning("No temporal files found to archive")
+            return [], str(run_dir)
+    
     def create_evolution_visualization(self, output_path: str = "network_evolution.gif",
                                      **kwargs) -> str:
         """Create animated visualization of network evolution."""
