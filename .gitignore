@@ -156,3 +156,7 @@ history/**
 *.gif
 temporal_network_data.json
 temporal_network_data_extended.json
+LEARNING_PATHS_SHOWCASE.md
+demo_outputs*
+examples/
+learning_path_outputs/

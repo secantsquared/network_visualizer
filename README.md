@@ -89,6 +89,33 @@ influence_results = builder.analyze_influence_propagation(
 )
 ```
 
+### Learning Path Generation
+
+```python
+from network_analyzer import NetworkConfig, WikipediaNetworkBuilder
+from network_analyzer.analysis import LearningPathAnalyzer
+from network_analyzer.visualization import LearningPathVisualizer
+
+# Build knowledge network
+config = NetworkConfig(max_depth=2, max_articles_to_process=20)
+builder = WikipediaNetworkBuilder(config)
+graph = builder.build_network(["Machine Learning"])
+
+# Generate learning paths
+analyzer = LearningPathAnalyzer(graph)
+learning_paths = analyzer.generate_multiple_paths("Machine Learning")
+
+# Create visualizations
+visualizer = LearningPathVisualizer(learning_paths)
+outputs = visualizer.create_all_visualizations(learning_paths, "learning_outputs")
+
+# Display paths
+for path_type, path in learning_paths.items():
+    print(f"{path_type}: {len(path.nodes)} steps, {path.total_estimated_time}")
+    for i, node in enumerate(path.nodes, 1):
+        print(f"  {i}. {node.name} ({node.estimated_time})")
+```
+
 ## CLI Usage
 
 The package includes command-line interfaces for interactive network building:
@@ -102,6 +129,9 @@ network-analyzer-unified
 
 # Reddit networks
 network-analyzer-reddit
+
+# Learning path generation
+network-analyzer-learning-path
 ```
 
 ## Project Structure
@@ -199,6 +229,16 @@ Models how information spreads through the network using:
 
 - Independent Cascade Model
 - Linear Threshold Model
+
+### Learning Path Generation
+
+Automatically generates optimal learning sequences from knowledge networks:
+
+- **Multiple Path Types**: Foundational, comprehensive, and fast-track learning paths
+- **Prerequisite Detection**: Automatically identifies prerequisite relationships
+- **Difficulty Progression**: Smart ordering based on topic complexity
+- **Time Estimation**: Realistic learning time estimates per topic
+- **Quality Metrics**: Comprehensive path analysis and quality scoring
 
 ## Visualization
 
