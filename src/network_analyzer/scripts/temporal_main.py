@@ -272,7 +272,6 @@ def interactive_temporal_cli():
     
     print("  🎬 temporal_growth_metrics.gif - Growth metrics animation")
     print("  📝 temporal_network_data.json - Temporal analysis data")
-    print(f"  📁 {run_dir} - Archived results")
     
     print(f"\nNetwork summary:")
     print(f"  • {len(graph.nodes())} nodes, {len(graph.edges())} edges")
