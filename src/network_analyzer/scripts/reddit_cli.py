@@ -114,7 +114,42 @@ def get_network_config():
     max_items = int(input("Maximum items to process (10-50, recommended: 15): ").strip() or "15")
     links_per_item = int(input("Links per item (5-15, recommended: 8): ").strip() or "8")
     
-    return network_type, time_filter, max_depth, max_items, links_per_item
+    # Physics engine selection
+    print("\nVisualization Physics Engine:")
+    print("1. Barnes-Hut (fast, good for large networks)")
+    print("2. ForceAtlas2 (community-focused)")
+    print("3. Hierarchical (tree-like structure)")
+    print("4. Circular (circular arrangement)")
+    print("5. Organic (natural layout)")
+    
+    physics_choice = input("Choose physics engine (1-5, recommended: 1): ").strip()
+    physics_engines = {
+        "1": "barnes_hut",
+        "2": "force_atlas2", 
+        "3": "hierarchical",
+        "4": "circular",
+        "5": "organic"
+    }
+    
+    physics_engine = physics_engines.get(physics_choice, "barnes_hut")
+    
+    # Optional: Custom physics parameters
+    custom_physics_params = None
+    custom_physics = input("Use custom physics parameters? (y/n) [n]: ").strip().lower()
+    if custom_physics == "y":
+        print("Enter custom physics parameters (or press Enter for defaults):")
+        gravity = input("Gravity [-80000]: ").strip()
+        spring_length = input("Spring length [200]: ").strip()
+        damping = input("Damping [0.09]: ").strip()
+        
+        custom_params = {}
+        if gravity: custom_params["gravity"] = int(gravity)
+        if spring_length: custom_params["spring_length"] = int(spring_length)
+        if damping: custom_params["damping"] = float(damping)
+        
+        custom_physics_params = custom_params if custom_params else None
+    
+    return network_type, time_filter, max_depth, max_items, links_per_item, physics_engine, custom_physics_params
 
 
 def get_seed_items(network_type):
@@ -238,7 +273,7 @@ def main():
         return
     
     # Get network configuration
-    network_type, time_filter, max_depth, max_items, links_per_item = get_network_config()
+    network_type, time_filter, max_depth, max_items, links_per_item, physics_engine, custom_physics_params = get_network_config()
     
     # Get seed items
     seeds = get_seed_items(network_type)
@@ -258,7 +293,9 @@ def main():
         reddit_max_comments=30,
         max_depth=max_depth,
         max_articles_to_process=max_items,
-        links_per_article=links_per_item
+        links_per_article=links_per_item,
+        physics_engine=physics_engine,
+        custom_physics_params=custom_physics_params
     )
     
     # Build network
@@ -292,8 +329,25 @@ def main():
         
         # Create interactive visualization
         html_file = f"{base_filename}.html"
-        builder.visualize_pyvis(html_file)
-        print(f"Interactive visualization: {html_file}")
+        builder.visualize_pyvis(
+            html_file,
+            physics=True,
+            color_by="depth",
+            physics_engine=physics_engine,
+            custom_physics_params=custom_physics_params
+        )
+        
+        # Get physics engine display name
+        physics_names = {
+            "barnes_hut": "Barnes-Hut",
+            "force_atlas2": "ForceAtlas2",
+            "hierarchical": "Hierarchical",
+            "circular": "Circular",
+            "organic": "Organic"
+        }
+        physics_display_name = physics_names.get(physics_engine, "Barnes-Hut")
+        
+        print(f"Interactive visualization ({physics_display_name}): {html_file}")
         
         # Create community visualization (if applicable)
         if graph.number_of_nodes() > 3:
