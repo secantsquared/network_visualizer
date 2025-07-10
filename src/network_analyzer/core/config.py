@@ -62,8 +62,8 @@ class NetworkConfig:
     reddit_client_secret: Optional[str] = None
     reddit_user_agent: Optional[str] = None
     reddit_network_type: str = "subreddit"  # "subreddit", "user", "discussion"
-    reddit_max_posts: int = 100
-    reddit_max_comments: int = 50
+    reddit_max_posts: int = 25  # Reduced from 100 to 25 for better performance
+    reddit_max_comments: int = 10  # Reduced from 50 to 10 for better performance
     reddit_time_filter: str = "month"  # "all", "year", "month", "week", "day", "hour"
     
     # Force-directed visualization parameters

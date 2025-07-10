@@ -55,11 +55,11 @@ def main():
         reddit_client_secret=reddit_client_secret,
         reddit_user_agent=reddit_user_agent,
         reddit_network_type="subreddit",
-        reddit_max_posts=50,
-        reddit_time_filter="month",
+        reddit_max_posts=15,  # Reduced for faster execution
+        reddit_time_filter="week",  # Shorter timeframe for faster results
         max_depth=2,
-        max_articles_to_process=20,
-        links_per_article=10
+        max_articles_to_process=12,  # Reduced for demo
+        links_per_article=8  # Reduced for faster execution
     )
     
     builder = UnifiedNetworkBuilder(config)
@@ -81,7 +81,7 @@ def main():
         # Create visualizations
         print("\nCreating visualizations...")
         builder.visualize_pyvis("reddit_subreddit_network.html")
-        builder.visualize_communities("reddit_subreddit_communities.png")
+        builder.visualize_communities_matplotlib("reddit_subreddit_communities.png")
         builder.save_graph("reddit_subreddit_network.graphml")
         
         print("Visualizations saved:")

@@ -111,8 +111,8 @@ def get_network_config():
     
     # Network size parameters
     max_depth = int(input("Maximum depth (1-3, recommended: 2): ").strip() or "2")
-    max_items = int(input("Maximum items to process (10-100, recommended: 30): ").strip() or "30")
-    links_per_item = int(input("Links per item (5-20, recommended: 10): ").strip() or "10")
+    max_items = int(input("Maximum items to process (10-50, recommended: 15): ").strip() or "15")
+    links_per_item = int(input("Links per item (5-15, recommended: 8): ").strip() or "8")
     
     return network_type, time_filter, max_depth, max_items, links_per_item
 
@@ -298,7 +298,7 @@ def main():
         # Create community visualization (if applicable)
         if graph.number_of_nodes() > 3:
             communities_file = f"{base_filename}_communities.png"
-            builder.visualize_communities(communities_file)
+            builder.visualize_communities_matplotlib(communities_file)
             print(f"Community visualization: {communities_file}")
         
         print(f"\nAnalysis complete! Open {html_file} in your browser to explore the network.")

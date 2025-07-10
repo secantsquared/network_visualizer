@@ -41,40 +41,63 @@ class RedditDataSource(DataSourceAdapter):
     def _get_subreddit_relationships(self, subreddit_name: str) -> List[str]:
         """Get related subreddits based on user overlap and cross-posts."""
         try:
+            self.logger.info(f"Fetching relationships for r/{subreddit_name}")
             subreddit = self.reddit.subreddit(subreddit_name)
             related_subreddits = set()
             
-            # Get top posts from the subreddit
-            posts = list(subreddit.top(time_filter=self.time_filter, limit=self.max_posts_per_subreddit))
+            # Get fewer posts but process them faster
+            posts_limit = min(self.max_posts_per_subreddit, 25)  # Limit to 25 posts max
+            self.logger.debug(f"Getting top {posts_limit} posts from r/{subreddit_name}")
             
-            # Find cross-posted subreddits
+            posts = list(subreddit.top(time_filter=self.time_filter, limit=posts_limit))
+            self.logger.debug(f"Found {len(posts)} posts in r/{subreddit_name}")
+            
+            # Find cross-posted subreddits (fast)
+            crosspost_count = 0
             for post in posts:
                 if hasattr(post, 'crosspost_parent_list') and post.crosspost_parent_list:
                     for crosspost in post.crosspost_parent_list:
                         if 'subreddit' in crosspost:
                             related_subreddits.add(crosspost['subreddit'])
+                            crosspost_count += 1
             
-            # Find subreddits mentioned in comments
-            for post in posts[:20]:  # Limit to top 20 posts for performance
+            if crosspost_count > 0:
+                self.logger.debug(f"Found {crosspost_count} cross-posts in r/{subreddit_name}")
+            
+            # Find subreddits mentioned in comments (limited processing)
+            comment_mentions = 0
+            posts_to_check = min(len(posts), 5)  # Only check top 5 posts for comments
+            
+            for post in posts[:posts_to_check]:
                 try:
+                    # Don't expand comment threads (limit=0) and only get top-level comments
                     post.comments.replace_more(limit=0)
-                    for comment in post.comments.list()[:self.max_comments_per_post]:
-                        if hasattr(comment, 'body'):
+                    comments_to_check = min(len(post.comments.list()), 10)  # Only check 10 comments max
+                    
+                    for comment in post.comments.list()[:comments_to_check]:
+                        if hasattr(comment, 'body') and comment.body:
                             # Look for r/subreddit mentions
                             import re
                             subreddit_mentions = re.findall(r'r/([A-Za-z0-9_]+)', comment.body)
                             for mention in subreddit_mentions:
                                 if mention.lower() != subreddit_name.lower():
                                     related_subreddits.add(mention)
+                                    comment_mentions += 1
                 except Exception as e:
                     self.logger.debug(f"Error processing comments for post {post.id}: {e}")
                     continue
             
-            # Get user overlap (users who post in both subreddits)
-            user_subreddits = self._get_user_subreddit_overlap(subreddit_name, posts)
+            if comment_mentions > 0:
+                self.logger.debug(f"Found {comment_mentions} subreddit mentions in comments")
+            
+            # Get user overlap (very limited to avoid slowdown)
+            user_subreddits = self._get_user_subreddit_overlap(subreddit_name, posts[:3])  # Only check 3 posts
             related_subreddits.update(user_subreddits)
             
-            return list(related_subreddits)[:self.config.links_per_article]
+            result = list(related_subreddits)[:self.config.links_per_article]
+            self.logger.info(f"Found {len(result)} related subreddits for r/{subreddit_name}: {result[:5]}...")
+            
+            return result
             
         except Exception as e:
             self.logger.error(f"Error getting subreddit relationships for {subreddit_name}: {e}")
@@ -84,7 +107,7 @@ class RedditDataSource(DataSourceAdapter):
         """Find subreddits where users from this subreddit also post."""
         user_subreddits = set()
         users_processed = 0
-        max_users_to_check = 10
+        max_users_to_check = 3  # Reduced from 10 to 3
         
         for post in posts:
             if users_processed >= max_users_to_check:
@@ -93,12 +116,13 @@ class RedditDataSource(DataSourceAdapter):
             try:
                 author = post.author
                 if author and hasattr(author, 'name'):
-                    # Get recent submissions from this user
-                    recent_posts = list(author.submissions.new(limit=20))
+                    # Get only a few recent submissions from this user
+                    recent_posts = list(author.submissions.new(limit=5))  # Reduced from 20 to 5
                     for user_post in recent_posts:
                         if hasattr(user_post, 'subreddit') and user_post.subreddit.display_name.lower() != subreddit_name.lower():
                             user_subreddits.add(user_post.subreddit.display_name)
                     users_processed += 1
+                    self.logger.debug(f"Processed user {author.name} ({users_processed}/{max_users_to_check})")
             except Exception as e:
                 self.logger.debug(f"Error processing user overlap: {e}")
                 continue
