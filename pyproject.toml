@@ -51,6 +51,7 @@ dev = [
 [project.scripts]
 network-analyzer = "network_analyzer.scripts.main:main"
 network-analyzer-unified = "network_analyzer.scripts.unified_main:main"
+network-analyzer-temporal = "network_analyzer.scripts.temporal_main:main"
 
 [project.urls]
 "Bug Tracker" = "https://github.com/secantsquared/network-analyzer/issues"
