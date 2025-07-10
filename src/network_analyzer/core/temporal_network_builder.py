@@ -332,7 +332,7 @@ class TemporalNetworkBuilder(WikipediaNetworkBuilder):
                 node_colors = []
                 for node in graph.nodes():
                     order = self.node_addition_times.get(node, {}).get('order', 0)
-                    max_order = max(info.get('order', 0) for info in self.node_addition_times.values())
+                    max_order = max((info.get('order', 0) for info in self.node_addition_times.values()), default=0)
                     intensity = order / max_order if max_order > 0 else 0
                     node_colors.append(plt.cm.viridis(intensity))
                 
