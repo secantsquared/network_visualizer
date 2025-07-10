@@ -131,9 +131,97 @@ def get_seed_items(network_type):
         print("Example: spez, AutoModerator")
         seeds_input = input("Users: ").strip()
     else:  # discussion
-        print("Enter Reddit post IDs separated by commas")
-        print("Example: abc123, def456")
-        seeds_input = input("Post IDs: ").strip()
+        print("Choose how to specify discussion seeds:")
+        print("1. Enter Reddit post URLs")
+        print("2. Enter post IDs directly")
+        print("3. Get top posts from a subreddit")
+        
+        while True:
+            choice = input("Choose method (1-3): ").strip()
+            if choice in ["1", "2", "3"]:
+                break
+            print("Invalid choice. Please enter 1, 2, or 3.")
+        
+        if choice == "1":
+            print("\nEnter Reddit post URLs separated by commas")
+            print("Example: https://reddit.com/r/Python/comments/abc123/title/")
+            seeds_input = input("URLs: ").strip()
+            # Extract post IDs from URLs
+            import re
+            seeds = []
+            for url in seeds_input.split(","):
+                url = url.strip()
+                # Match Reddit post URLs and extract post ID
+                match = re.search(r'reddit\.com/r/\w+/comments/([a-zA-Z0-9]+)', url)
+                if match:
+                    seeds.append(match.group(1))
+                else:
+                    print(f"Warning: Could not extract post ID from URL: {url}")
+            return seeds
+            
+        elif choice == "2":
+            print("\nEnter Reddit post IDs separated by commas")
+            print("Example: abc123, def456")
+            print("(Post IDs can be found in Reddit URLs after '/comments/')")
+            seeds_input = input("Post IDs: ").strip()
+            
+        else:  # choice == "3"
+            subreddit = input("Enter subreddit name to get top posts from: ").strip()
+            if not subreddit:
+                print("Error: Subreddit name is required")
+                return []
+            
+            print("Time period for top posts:")
+            print("1. Past day")
+            print("2. Past week") 
+            print("3. Past month")
+            print("4. Past year")
+            print("5. All time")
+            
+            time_filters = {"1": "day", "2": "week", "3": "month", "4": "year", "5": "all"}
+            while True:
+                time_choice = input("Choose time period (1-5): ").strip()
+                if time_choice in time_filters:
+                    time_filter = time_filters[time_choice]
+                    break
+                print("Invalid choice. Please enter 1-5.")
+            
+            num_posts = input("Number of top posts to use (default 5): ").strip()
+            try:
+                num_posts = int(num_posts) if num_posts else 5
+                num_posts = min(num_posts, 25)  # Limit to 25 posts
+            except ValueError:
+                num_posts = 5
+            
+            # Get top posts from subreddit
+            print(f"\nFetching top {num_posts} posts from r/{subreddit}...")
+            try:
+                # We'll need to create a temporary Reddit instance to fetch posts
+                import praw
+                import os
+                
+                # Use credentials from environment
+                reddit = praw.Reddit(
+                    client_id=os.getenv('REDDIT_CLIENT_ID'),
+                    client_secret=os.getenv('REDDIT_CLIENT_SECRET'),
+                    user_agent=os.getenv('REDDIT_USER_AGENT')
+                )
+                
+                subreddit_obj = reddit.subreddit(subreddit)
+                top_posts = list(subreddit_obj.top(time_filter=time_filter, limit=num_posts))
+                
+                seeds = [post.id for post in top_posts]
+                print(f"Found {len(seeds)} posts:")
+                for i, post in enumerate(top_posts, 1):
+                    title = post.title[:60] + "..." if len(post.title) > 60 else post.title
+                    print(f"  {i}. {title}")
+                
+                return seeds
+                
+            except Exception as e:
+                print(f"Error fetching posts: {e}")
+                print("Falling back to manual post ID entry...")
+                seeds_input = input("Enter post IDs separated by commas: ").strip()
     
     seeds = [seed.strip() for seed in seeds_input.split(",") if seed.strip()]
     return seeds
@@ -199,7 +287,7 @@ def main():
         
         # Save network file
         graphml_file = f"{base_filename}.graphml"
-        builder.save_network(graphml_file)
+        builder.save_graph(graphml_file)
         print(f"Network saved: {graphml_file}")
         
         # Create interactive visualization

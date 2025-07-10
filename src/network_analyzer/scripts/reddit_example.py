@@ -82,7 +82,7 @@ def main():
         print("\nCreating visualizations...")
         builder.visualize_pyvis("reddit_subreddit_network.html")
         builder.visualize_communities("reddit_subreddit_communities.png")
-        builder.save_network("reddit_subreddit_network.graphml")
+        builder.save_graph("reddit_subreddit_network.graphml")
         
         print("Visualizations saved:")
         print("  - reddit_subreddit_network.html (interactive)")
