@@ -3,7 +3,7 @@ build-backend = "setuptools.build_meta"
 requires = ["setuptools>=45", "wheel"]
 
 [project]
-authors = [{ name = "Network Analyzer Team", email = "contact@example.com" }]
+authors = [{ name = "Ryan Boris", email = "takeagauss@gmail.com" }]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Researchers",
