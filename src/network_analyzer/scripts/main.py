@@ -201,6 +201,38 @@ def interactive_cli():
     # Analyze and visualize
     stats = builder.analyze_network()
     builder.print_analysis(stats)
+    
+    # Ask about AI insights
+    print(f"\n" + "-" * 40)
+    print("AI INSIGHTS")
+    print("-" * 40)
+    
+    generate_insights = input("Generate AI-powered insights? (y/n) [y]: ").strip().lower()
+    if generate_insights != "n":
+        try:
+            from network_analyzer.analysis import NetworkInsightsGenerator
+            
+            print("Generating AI insights...")
+            insights_generator = NetworkInsightsGenerator()
+            insights = insights_generator.generate_network_insights(
+                stats, builder.graph, topic=" & ".join(seeds)
+            )
+            
+            # Display insights
+            insights_text = insights_generator.format_insights_for_display(insights)
+            print(insights_text)
+            
+            # Save insights
+            insights_generator.save_insights_to_file(insights, "network_insights.json")
+            print("💾 Insights saved to network_insights.json")
+            
+        except ImportError:
+            print("⚠️  OpenAI package not installed. Run: pip install openai")
+        except Exception as e:
+            print(f"⚠️  Could not generate insights: {e}")
+            print("To enable AI insights:")
+            print("  1. Copy .env.template to .env")
+            print("  2. Add your Azure OpenAI credentials to the .env file")
 
     # Ask about visualizations
     print(f"\n" + "-" * 40)

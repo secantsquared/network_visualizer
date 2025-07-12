@@ -67,7 +67,8 @@ class NetworkConfig:
     reddit_time_filter: str = "month"  # "all", "year", "month", "week", "day", "hour"
     
     # Force-directed visualization parameters
-    physics_engine: str = "barnes_hut"  # "barnes_hut", "force_atlas2", "hierarchical", "circular", "organic"
+    physics_engine: str = "barnes_hut"  # "barnes_hut", "force_atlas2", "hierarchical", "circular", "organic", "centrality"
+    size_by: str = "degree"  # "degree", "betweenness", "pagerank", "closeness", "eigenvector"
     custom_physics_params: Optional[dict] = None
     adaptive_physics: bool = True  # Auto-adjust parameters based on network size
 
@@ -91,6 +92,35 @@ class NetworkConfig:
             "Portal:",
             "List of",
             "Lists of",
+            # Event-specific filters
+            "Grand Prix",
+            "Championship",
+            "Olympic",
+            "World Cup",
+            "crisis",
+            "earthquake",
+            "hurricane",
+            "disaster",
+            # Time-specific filters
+            "in 19", "in 20",  # Years like "in 1990", "in 2020"
+            # People filters
+            "biography",
+            "politician",
+            "actor",
+            "singer",
+            "athlete",
+            # Entertainment filters
+            "film)",
+            "movie)",
+            "album)",
+            "song)",
+            "novel)",
+            "book)",
+            # General noise filters
+            "deaths in",
+            "births in",
+            "awards",
+            "ceremony",
         ]
 
     def _validate_config(self):

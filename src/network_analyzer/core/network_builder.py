@@ -252,6 +252,26 @@ class WikipediaNetworkBuilder:
         if title.strip().isdigit() and len(title.strip()) == 4:
             return True
 
+        # Filter specific year-based events (e.g., "2012 Malaysian Grand Prix")
+        import re
+        if re.match(r'^\d{4}\s+.*', title):
+            # Allow some educational/technical topics that start with years
+            educational_exceptions = ['software', 'standard', 'specification', 'protocol', 'algorithm', 'method']
+            if not any(exception in title_lower for exception in educational_exceptions):
+                return True
+
+        # Filter entertainment and sports content
+        entertainment_patterns = [
+            r'.*\s+film$', r'.*\s+movie$', r'.*\s+album$', r'.*\s+song$',
+            r'.*\s+band$', r'.*\s+actor$', r'.*\s+singer$', r'.*\s+athlete$',
+            r'.*\s+championship$', r'.*\s+tournament$', r'.*\s+cup$',
+            r'.*\s+season$', r'.*\s+series$'
+        ]
+        
+        for pattern in entertainment_patterns:
+            if re.search(pattern, title_lower):
+                return True
+
         return False
 
     def _make_api_request(self, params: Dict) -> Optional[Dict]:
@@ -1871,6 +1891,7 @@ class WikipediaNetworkBuilder:
         output_path: str = "wiki_network.html",
         physics: bool = True,
         color_by: str = "depth",  # "depth" or "community"
+        size_by: str = "degree",  # "degree", "betweenness", "pagerank", "closeness", "eigenvector"
         physics_engine: str = "barnes_hut",
         custom_physics_params: Optional[dict] = None,
         **kwargs,
@@ -1882,7 +1903,8 @@ class WikipediaNetworkBuilder:
             output_path: Output HTML file path
             physics: Enable physics simulation
             color_by: Color nodes by "depth" or "community"
-            physics_engine: Physics engine to use ("barnes_hut", "force_atlas2", "hierarchical", "circular", "organic")
+            size_by: Size nodes by centrality measure ("degree", "betweenness", "pagerank", "closeness", "eigenvector")
+            physics_engine: Physics engine to use ("barnes_hut", "force_atlas2", "hierarchical", "circular", "organic", "centrality")
             custom_physics_params: Custom physics parameters to override defaults
             **kwargs: Additional pyvis Network parameters
         """
@@ -1913,6 +1935,7 @@ class WikipediaNetworkBuilder:
                     output_path=output_path,
                     physics_type=physics_engine,
                     color_by=color_by,
+                    size_by=size_by,
                     custom_params=custom_physics_params,
                     **default_params,
                 )

@@ -377,18 +377,40 @@ def interactive_cli():
             print("  3. Hierarchical (tree-like structure)")
             print("  4. Circular (circular arrangement)")
             print("  5. Organic (natural layout)")
+            print("  6. Centrality-Based (optimized for centrality node sizing)")
             
-            physics_choice = input("Enter choice (1-5) [1]: ").strip()
+            physics_choice = input("Enter choice (1-6) [1]: ").strip()
             physics_engines = {
                 "1": "barnes_hut",
                 "2": "force_atlas2", 
                 "3": "hierarchical",
                 "4": "circular",
-                "5": "organic"
+                "5": "organic",
+                "6": "centrality"
             }
             
             selected_physics = physics_engines.get(physics_choice, "barnes_hut")
             config.physics_engine = selected_physics
+            
+            # Node sizing selection
+            print("\nSelect node sizing scheme:")
+            print("  1. Degree centrality (number of connections)")
+            print("  2. Betweenness centrality (bridge nodes)")
+            print("  3. PageRank centrality (importance)")
+            print("  4. Closeness centrality (shortest paths)")
+            print("  5. Eigenvector centrality (connected to important nodes)")
+            
+            size_choice = input("Enter choice (1-5) [1]: ").strip()
+            size_schemes = {
+                "1": "degree",
+                "2": "betweenness",
+                "3": "pagerank",
+                "4": "closeness",
+                "5": "eigenvector"
+            }
+            
+            selected_size_scheme = size_schemes.get(size_choice, "degree")
+            config.size_by = selected_size_scheme
             
             # Optional: Custom physics parameters
             custom_physics = input("Use custom physics parameters? (y/n) [n]: ").strip().lower()
@@ -412,6 +434,7 @@ def interactive_cli():
                 "unified_network_depth.html", 
                 physics=True, 
                 color_by="depth",
+                size_by=config.size_by,
                 physics_engine=config.physics_engine,
                 custom_physics_params=config.custom_physics_params
             )
@@ -419,6 +442,7 @@ def interactive_cli():
                 "unified_network_communities.html", 
                 physics=True, 
                 color_by="community",
+                size_by=config.size_by,
                 physics_engine=config.physics_engine,
                 custom_physics_params=config.custom_physics_params
             )
