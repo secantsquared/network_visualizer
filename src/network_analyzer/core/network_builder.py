@@ -608,7 +608,10 @@ class WikipediaNetworkBuilder:
 
                 # Add next level to frontier (only if we haven't hit our processing limit)
                 if articles_processed < self.config.max_articles_to_process:
-                    frontier.extend(next_articles)
+                    # Randomize order to avoid alphabetical bias from set ordering
+                    next_articles_list = list(next_articles)
+                    random.shuffle(next_articles_list)
+                    frontier.extend(next_articles_list)
                 depth += 1
 
             pbar.close()
@@ -755,7 +758,10 @@ class WikipediaNetworkBuilder:
 
                 # Add next level to frontier
                 if articles_processed < self.config.max_articles_to_process:
-                    frontier.extend(next_articles)
+                    # Randomize order to avoid alphabetical bias from set ordering
+                    next_articles_list = list(next_articles)
+                    random.shuffle(next_articles_list)
+                    frontier.extend(next_articles_list)
                 depth += 1
 
             pbar.close()
@@ -1517,7 +1523,10 @@ class WikipediaNetworkBuilder:
                             if target not in self.visited:
                                 next_articles.add(target)
 
-            frontier.extend(next_articles)
+            # Randomize order to avoid alphabetical bias from set ordering
+            next_articles_list = list(next_articles)
+            random.shuffle(next_articles_list)
+            frontier.extend(next_articles_list)
             depth += 1
 
         # Phase 2: Identify hubs
