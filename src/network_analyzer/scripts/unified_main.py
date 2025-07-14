@@ -328,12 +328,22 @@ def interactive_cli():
             num_sims = input("Number of simulations [100]: ").strip()
             num_simulations = int(num_sims) if num_sims.isdigit() else 100
             
+            # Add activation probability input
+            act_prob = input("Activation probability (0.0-1.0) [0.15]: ").strip()
+            try:
+                activation_probability = float(act_prob) if act_prob else 0.15
+                activation_probability = max(0.0, min(1.0, activation_probability))  # Clamp to valid range
+            except ValueError:
+                activation_probability = 0.15
+                print("Invalid input, using default activation probability of 0.15")
+            
             print(f"\nRunning influence propagation analysis with {model_name} model...")
             try:
                 influence_results = builder.analyze_influence_propagation(
                     seed_nodes=seeds,
                     model=model_name,
-                    num_simulations=num_simulations
+                    num_simulations=num_simulations,
+                    activation_probability=activation_probability
                 )
                 
                 if influence_results:
@@ -374,7 +384,8 @@ def interactive_cli():
                         builder.visualize_influence_propagation(
                             seeds=optimal['nodes'],
                             model=model_name,
-                            output_path=influence_path
+                            output_path=influence_path,
+                            activation_probability=activation_probability
                         )
                         print(f"✓ Influence propagation visualization created: {influence_path}")
                 

@@ -2265,6 +2265,7 @@ class WikipediaNetworkBuilder:
         seed_nodes: List[str] = None,
         model: str = "independent_cascade",
         num_simulations: int = 100,
+        activation_probability: float = 0.15,
     ) -> Dict:
         """
         Analyze influence propagation in the network.
@@ -2273,6 +2274,7 @@ class WikipediaNetworkBuilder:
             seed_nodes: Initial nodes to start propagation from
             model: Propagation model ("independent_cascade" or "linear_threshold")
             num_simulations: Number of Monte Carlo simulations
+            activation_probability: Probability of activation for independent cascade model
 
         Returns:
             Dictionary with influence propagation results
@@ -2305,7 +2307,7 @@ class WikipediaNetworkBuilder:
             config = PropagationConfig(
                 model=model_enum,
                 num_simulations=num_simulations,
-                activation_probability=0.15,
+                activation_probability=activation_probability,
                 verbose=False,
             )
 
@@ -2358,6 +2360,7 @@ class WikipediaNetworkBuilder:
         seeds: List[str] = None,
         model: str = "independent_cascade",
         output_path: str = "influence_propagation.png",
+        activation_probability: float = 0.15,
     ):
         """
         Create visualization of influence propagation.
@@ -2366,6 +2369,7 @@ class WikipediaNetworkBuilder:
             seeds: Seed nodes for propagation
             model: Propagation model to use
             output_path: Output file path
+            activation_probability: Probability of activation for independent cascade model
         """
         try:
             from ..analysis.influence_propagation import (
@@ -2392,7 +2396,7 @@ class WikipediaNetworkBuilder:
                 else PropagationModel.LINEAR_THRESHOLD
             )
             config = PropagationConfig(
-                model=model_enum, activation_probability=0.15, verbose=False
+                model=model_enum, activation_probability=activation_probability, verbose=False
             )
 
             # Create simulator and run single simulation
