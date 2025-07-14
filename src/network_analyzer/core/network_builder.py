@@ -2291,7 +2291,10 @@ class WikipediaNetworkBuilder:
             if seed_nodes is None:
                 # Use top PageRank nodes as seeds
                 pagerank = nx.pagerank(self.graph)
-                seed_nodes = sorted(pagerank.keys(), key=pagerank.get, reverse=True)[:3]
+                # Randomize order to avoid alphabetical bias in ties
+                nodes_list = list(pagerank.keys())
+                random.shuffle(nodes_list)
+                seed_nodes = sorted(nodes_list, key=pagerank.get, reverse=True)[:3]
 
             # Filter valid seed nodes
             valid_seeds = [node for node in seed_nodes if node in self.graph.nodes()]
@@ -2384,7 +2387,10 @@ class WikipediaNetworkBuilder:
             # Use provided seeds or find optimal ones
             if seeds is None:
                 pagerank = nx.pagerank(self.graph)
-                seeds = sorted(pagerank.keys(), key=pagerank.get, reverse=True)[:3]
+                # Randomize order to avoid alphabetical bias in ties
+                nodes_list = list(pagerank.keys())
+                random.shuffle(nodes_list)
+                seeds = sorted(nodes_list, key=pagerank.get, reverse=True)[:3]
 
             # Filter valid seeds
             valid_seeds = [node for node in seeds if node in self.graph.nodes()]

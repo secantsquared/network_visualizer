@@ -363,17 +363,26 @@ class InfluencePropagationSimulator:
         elif method == "degree":
             # Select nodes with highest degree
             degree_centrality = nx.degree_centrality(self.graph)
-            return sorted(degree_centrality.keys(), key=degree_centrality.get, reverse=True)[:k]
+            # Randomize order to avoid alphabetical bias in ties
+            nodes_list = list(degree_centrality.keys())
+            random.shuffle(nodes_list)
+            return sorted(nodes_list, key=degree_centrality.get, reverse=True)[:k]
         
         elif method == "pagerank":
             # Select nodes with highest PageRank
             pagerank = nx.pagerank(self.graph)
-            return sorted(pagerank.keys(), key=pagerank.get, reverse=True)[:k]
+            # Randomize order to avoid alphabetical bias in ties
+            nodes_list = list(pagerank.keys())
+            random.shuffle(nodes_list)
+            return sorted(nodes_list, key=pagerank.get, reverse=True)[:k]
         
         elif method == "betweenness":
             # Select nodes with highest betweenness centrality
             betweenness = nx.betweenness_centrality(self.graph)
-            return sorted(betweenness.keys(), key=betweenness.get, reverse=True)[:k]
+            # Randomize order to avoid alphabetical bias in ties
+            nodes_list = list(betweenness.keys())
+            random.shuffle(nodes_list)
+            return sorted(nodes_list, key=betweenness.get, reverse=True)[:k]
         
         elif method == "greedy":
             # Greedy algorithm for influence maximization
@@ -384,8 +393,10 @@ class InfluencePropagationSimulator:
                 best_node = None
                 best_influence = 0
                 
-                # Test each remaining node
-                for node in remaining_nodes:
+                # Test each remaining node in random order to avoid alphabetical bias
+                remaining_list = list(remaining_nodes)
+                random.shuffle(remaining_list)
+                for node in remaining_list:
                     test_seeds = selected_seeds + [node]
                     
                     # Run a few simulations to estimate influence
