@@ -180,7 +180,8 @@ class InfluencePropagationSimulator:
             if node in activated:
                 # Score based on activation time (earlier = higher influence)
                 time_factor = 1.0 / (activation_times.get(node, 1) + 1)
-                degree_factor = self.graph.degree(node) / max(dict(self.graph.degree()).values())
+                max_degree = max(dict(self.graph.degree()).values()) if self.graph.nodes() else 1
+                degree_factor = self.graph.degree(node) / max_degree
                 influence_scores[node] = time_factor * degree_factor
             else:
                 influence_scores[node] = 0.0
@@ -249,7 +250,8 @@ class InfluencePropagationSimulator:
             if node in activated:
                 # Score based on activation time and centrality
                 time_factor = 1.0 / (activation_times.get(node, 1) + 1)
-                degree_factor = self.graph.degree(node) / max(dict(self.graph.degree()).values()) if self.graph.nodes() else 0
+                max_degree = max(dict(self.graph.degree()).values()) if self.graph.nodes() else 1
+                degree_factor = self.graph.degree(node) / max_degree
                 influence_scores[node] = time_factor * degree_factor
             else:
                 influence_scores[node] = 0.0

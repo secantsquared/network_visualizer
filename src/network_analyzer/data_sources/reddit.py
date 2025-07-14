@@ -204,6 +204,10 @@ class RedditDataSource(DataSourceAdapter):
     
     def _should_filter_subreddit(self, subreddit_name: str) -> bool:
         """Filter out inappropriate or banned subreddits."""
+        # Validate input
+        if not subreddit_name or not isinstance(subreddit_name, str):
+            return True
+            
         # Filter common spam/bot subreddits
         spam_subreddits = {
             'spam', 'test', 'testing', 'bot', 'bots', 'shadowban', 'deleted',
@@ -228,6 +232,10 @@ class RedditDataSource(DataSourceAdapter):
     
     def _should_filter_user(self, username: str) -> bool:
         """Filter out deleted/suspended users."""
+        # Validate input
+        if not username or not isinstance(username, str):
+            return True
+            
         if username.lower() in ['deleted', 'removed', '[deleted]', '[removed]']:
             return True
         

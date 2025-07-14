@@ -1170,7 +1170,8 @@ class WikipediaNetworkBuilder:
                             articles_processed, self.config.max_articles_to_process
                         )
                 else:
-                    # No links found, mark as processed
+                    # No links found, mark as processed but don't count toward progress
+                    self.logger.debug(f"No links found for '{current_article}', marking as visited")
                     self.visited.add(current_article)
 
         self.logger.info("=" * 60)
@@ -1317,7 +1318,7 @@ class WikipediaNetworkBuilder:
                     continue
 
                 self.logger.debug(
-                    f"Topic-focused: Processing '{current_article}' (similarity: {similarity:.3f})"
+                    f"Topic-focused: Processing '{current_article}' (similarity: {similarity:.3f}, depth: {current_depth})"
                 )
 
                 links = self.get_article_links(current_article)
@@ -1351,12 +1352,15 @@ class WikipediaNetworkBuilder:
                             target_similarity = self._calculate_topic_similarity(
                                 target, self.config.topic_keywords
                             )
+                            self.logger.debug(f"Target '{target}' similarity: {target_similarity:.3f} (keywords: {self.config.topic_keywords})")
 
-                            # Apply similarity threshold
-                            if (
-                                target_similarity
-                                >= self.config.topic_similarity_threshold
-                            ):
+                            # Apply similarity threshold - but ensure we process at least some nodes beyond seeds
+                            meets_threshold = target_similarity >= self.config.topic_similarity_threshold
+                            is_forced_include = (articles_processed < len(valid_seeds) + 2 and 
+                                               current_depth == 0 and 
+                                               target_similarity >= 0.1)  # Lower threshold for first expansion
+                            
+                            if meets_threshold or is_forced_include:
                                 # Add target node if it doesn't exist
                                 if target not in self.graph:
                                     self.graph.add_node(
@@ -1388,10 +1392,16 @@ class WikipediaNetworkBuilder:
                                     )
                                 )
 
+                    self.logger.debug(f"Found {len(candidate_links)} candidate links for '{current_article}'")
+
                     # Add candidate links to frontier
+                    added_to_frontier = 0
                     for target, depth, sim, priority in candidate_links:
                         if target not in self.visited:
                             frontier.append((-priority, target, depth, sim))
+                            added_to_frontier += 1
+                    
+                    self.logger.debug(f"Added {added_to_frontier} new targets to frontier (frontier size: {len(frontier)})")
 
                     # Limit frontier size to prevent memory issues
                     if len(frontier) > 1000:
@@ -1403,7 +1413,8 @@ class WikipediaNetworkBuilder:
                             articles_processed, self.config.max_articles_to_process
                         )
                 else:
-                    # No links found, mark as processed
+                    # No links found, mark as processed but don't count toward progress
+                    self.logger.debug(f"No links found for '{current_article}', marking as visited")
                     self.visited.add(current_article)
 
         self.logger.info("=" * 60)

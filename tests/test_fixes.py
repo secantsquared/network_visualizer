@@ -5,8 +5,8 @@ Test script to verify the fixes for Coursera data source and hybrid mode.
 
 import logging
 from pathlib import Path
-from config import NetworkConfig
-from unified_network_builder import UnifiedNetworkBuilder
+from network_analyzer.core.config import NetworkConfig
+from network_analyzer.core.unified_network_builder import UnifiedNetworkBuilder
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG, format='%(levelname)s: %(message)s')
