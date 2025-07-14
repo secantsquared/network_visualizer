@@ -270,6 +270,22 @@ def interactive_cli():
         if hub_depth_limit.isdigit():
             config.hub_depth_limit = int(hub_depth_limit)
 
+    # Create output directory structure at the beginning
+    output_base = Path("outputs/history")
+    output_base.mkdir(parents=True, exist_ok=True)
+    
+    # Find the next available run number
+    run_number = 1
+    while True:
+        run_dir = output_base / f"run{run_number}"
+        if not run_dir.exists():
+            break
+        run_number += 1
+    
+    # Create the run directory
+    run_dir.mkdir(exist_ok=True)
+    print(f"Output directory created: {run_dir}")
+
     # Build the network
     print(f"\n" + "=" * 60)
     print("BUILDING NETWORK")
@@ -354,21 +370,6 @@ def interactive_cli():
                     create_influence_viz = input("\nCreate influence propagation visualization? (y/n) [y]: ").strip().lower()
                     if create_influence_viz != "n":
                         print("Creating influence propagation visualization...")
-                        # Create a temporary output directory for influence viz if main viz hasn't been created yet
-                        if 'run_dir' not in locals():
-                            output_base = Path("outputs/history")
-                            output_base.mkdir(parents=True, exist_ok=True)
-                            
-                            # Find the next available run number
-                            run_number = 1
-                            while True:
-                                run_dir = output_base / f"run{run_number}"
-                                if not run_dir.exists():
-                                    break
-                                run_number += 1
-                            
-                            run_dir.mkdir(exist_ok=True)
-                        
                         influence_path = str(run_dir / "influence_propagation.png")
                         builder.visualize_influence_propagation(
                             seeds=optimal['nodes'],
@@ -376,20 +377,6 @@ def interactive_cli():
                             output_path=influence_path
                         )
                         print(f"✓ Influence propagation visualization created: {influence_path}")
-                        
-                        # Update metadata if this is created before main visualizations
-                        if 'output_files' not in locals():
-                            # Create initial metadata for influence propagation only
-                            metadata_path = run_dir / "run_info.txt"
-                            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                            with open(metadata_path, "w") as f:
-                                f.write(f"Run: {run_number}\n")
-                                f.write(f"Timestamp: {timestamp}\n")
-                                f.write(f"Method: {selected_method}\n")
-                                f.write(f"Seeds: {', '.join(seeds)}\n")
-                                f.write(f"Files created: 1\n")
-                                f.write(f"Files:\n")
-                                f.write(f"  - influence_propagation.png\n")
                 
             except Exception as e:
                 print(f"❌ Error running influence propagation analysis: {e}")
@@ -460,21 +447,6 @@ def interactive_cli():
             
             print("Creating visualizations...")
             
-            # Create output directory structure
-            output_base = Path("outputs/history")
-            output_base.mkdir(parents=True, exist_ok=True)
-            
-            # Find the next available run number
-            run_number = 1
-            while True:
-                run_dir = output_base / f"run{run_number}"
-                if not run_dir.exists():
-                    break
-                run_number += 1
-            
-            # Create the run directory
-            run_dir.mkdir(exist_ok=True)
-            
             # Create visualizations directly in the output directory
             builder.visualize_pyvis(
                 str(run_dir / "unified_network_depth.html"), 
@@ -495,35 +467,6 @@ def interactive_cli():
             builder.visualize_communities_matplotlib(str(run_dir / "unified_communities.png"))
             builder.save_graph(str(run_dir / "unified_network.graphml"))
 
-            # Create metadata file
-            metadata_path = run_dir / "run_info.txt"
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            output_files = [
-                "unified_network_depth.html",
-                "unified_network_communities.html", 
-                "unified_communities.png",
-                "unified_network.graphml"
-            ]
-            
-            # Add influence propagation file if it exists
-            influence_file = run_dir / "influence_propagation.png"
-            if influence_file.exists():
-                output_files.append("influence_propagation.png")
-            
-            with open(metadata_path, "w") as f:
-                f.write(f"Run: {run_number}\n")
-                f.write(f"Timestamp: {timestamp}\n")
-                f.write(f"Method: {selected_method}\n")
-                f.write(f"Physics Engine: {config.physics_engine}\n")
-                f.write(f"Node Sizing: {config.size_by}\n")
-                f.write(f"Seeds: {', '.join(seeds)}\n")
-                f.write(f"Files created: {len(output_files)}\n")
-                f.write(f"Files:\n")
-                for file in output_files:
-                    f.write(f"  - {file}\n")
-            
-            archived_files = [str(run_dir / f) for f in output_files]
-
             physics_name = {
                 "barnes_hut": "Barnes-Hut",
                 "force_atlas2": "ForceAtlas2", 
@@ -537,17 +480,36 @@ def interactive_cli():
             print("  - unified_network_communities.html (interactive - colored by community)")
             print("  - unified_communities.png (static community plot)")
             print("  - unified_network.graphml (network data)")
-            
-            # Add influence propagation file if it was created
-            if 'influence_path' in locals():
-                print("  - influence_propagation.png (influence propagation visualization)")
 
-            print(f"\nAll files saved to: {run_dir}")
-            print(f"  Contains {len(output_files)} output files and run metadata")
+        # Create final metadata file with all outputs
+        metadata_path = run_dir / "run_info.txt"
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        # Find all files created in the run directory
+        created_files = []
+        for file_path in run_dir.glob("*"):
+            if file_path.is_file() and file_path.name != "run_info.txt":
+                created_files.append(file_path.name)
+        
+        with open(metadata_path, "w") as f:
+            f.write(f"Run: {run_number}\n")
+            f.write(f"Timestamp: {timestamp}\n")
+            f.write(f"Method: {selected_method}\n")
+            if 'config' in locals() and hasattr(config, 'physics_engine'):
+                f.write(f"Physics Engine: {config.physics_engine}\n")
+                f.write(f"Node Sizing: {config.size_by}\n")
+            f.write(f"Seeds: {', '.join(seeds)}\n")
+            f.write(f"Data Source: {config.data_source_type}\n")
+            f.write(f"Files created: {len(created_files)}\n")
+            f.write(f"Files:\n")
+            for file in sorted(created_files):
+                f.write(f"  - {file}\n")
 
         print(f"\n" + "=" * 60)
         print("NETWORK BUILDING COMPLETE!")
         print("=" * 60)
+        print(f"All outputs saved to: {run_dir}")
+        print(f"Files created: {', '.join(sorted(created_files))}")
 
         return builder
 
