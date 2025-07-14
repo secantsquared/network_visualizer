@@ -4,6 +4,7 @@ Unified main interface that supports both Wikipedia and Coursera/Kaggle data sou
 
 import requests_cache
 from pathlib import Path
+from datetime import datetime
 
 from network_analyzer.core.config import NetworkConfig
 from network_analyzer.core.unified_network_builder import UnifiedNetworkBuilder
@@ -353,12 +354,42 @@ def interactive_cli():
                     create_influence_viz = input("\nCreate influence propagation visualization? (y/n) [y]: ").strip().lower()
                     if create_influence_viz != "n":
                         print("Creating influence propagation visualization...")
+                        # Create a temporary output directory for influence viz if main viz hasn't been created yet
+                        if 'run_dir' not in locals():
+                            output_base = Path("outputs/history")
+                            output_base.mkdir(parents=True, exist_ok=True)
+                            
+                            # Find the next available run number
+                            run_number = 1
+                            while True:
+                                run_dir = output_base / f"run{run_number}"
+                                if not run_dir.exists():
+                                    break
+                                run_number += 1
+                            
+                            run_dir.mkdir(exist_ok=True)
+                        
+                        influence_path = str(run_dir / "influence_propagation.png")
                         builder.visualize_influence_propagation(
                             seeds=optimal['nodes'],
                             model=model_name,
-                            output_path="influence_propagation.png"
+                            output_path=influence_path
                         )
-                        print("✓ Influence propagation visualization created: influence_propagation.png")
+                        print(f"✓ Influence propagation visualization created: {influence_path}")
+                        
+                        # Update metadata if this is created before main visualizations
+                        if 'output_files' not in locals():
+                            # Create initial metadata for influence propagation only
+                            metadata_path = run_dir / "run_info.txt"
+                            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                            with open(metadata_path, "w") as f:
+                                f.write(f"Run: {run_number}\n")
+                                f.write(f"Timestamp: {timestamp}\n")
+                                f.write(f"Method: {selected_method}\n")
+                                f.write(f"Seeds: {', '.join(seeds)}\n")
+                                f.write(f"Files created: 1\n")
+                                f.write(f"Files:\n")
+                                f.write(f"  - influence_propagation.png\n")
                 
             except Exception as e:
                 print(f"❌ Error running influence propagation analysis: {e}")
@@ -428,10 +459,25 @@ def interactive_cli():
                 config.custom_physics_params = custom_params if custom_params else None
             
             print("Creating visualizations...")
-
-            # Create visualizations with selected physics
+            
+            # Create output directory structure
+            output_base = Path("outputs/history")
+            output_base.mkdir(parents=True, exist_ok=True)
+            
+            # Find the next available run number
+            run_number = 1
+            while True:
+                run_dir = output_base / f"run{run_number}"
+                if not run_dir.exists():
+                    break
+                run_number += 1
+            
+            # Create the run directory
+            run_dir.mkdir(exist_ok=True)
+            
+            # Create visualizations directly in the output directory
             builder.visualize_pyvis(
-                "unified_network_depth.html", 
+                str(run_dir / "unified_network_depth.html"), 
                 physics=True, 
                 color_by="depth",
                 size_by=config.size_by,
@@ -439,18 +485,44 @@ def interactive_cli():
                 custom_physics_params=config.custom_physics_params
             )
             builder.visualize_pyvis(
-                "unified_network_communities.html", 
+                str(run_dir / "unified_network_communities.html"), 
                 physics=True, 
                 color_by="community",
                 size_by=config.size_by,
                 physics_engine=config.physics_engine,
                 custom_physics_params=config.custom_physics_params
             )
-            builder.visualize_communities_matplotlib("unified_communities.png")
-            builder.save_graph("unified_network.graphml")
+            builder.visualize_communities_matplotlib(str(run_dir / "unified_communities.png"))
+            builder.save_graph(str(run_dir / "unified_network.graphml"))
 
-            # Save to history
-            archived_files, run_dir = builder.save_to_history()
+            # Create metadata file
+            metadata_path = run_dir / "run_info.txt"
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            output_files = [
+                "unified_network_depth.html",
+                "unified_network_communities.html", 
+                "unified_communities.png",
+                "unified_network.graphml"
+            ]
+            
+            # Add influence propagation file if it exists
+            influence_file = run_dir / "influence_propagation.png"
+            if influence_file.exists():
+                output_files.append("influence_propagation.png")
+            
+            with open(metadata_path, "w") as f:
+                f.write(f"Run: {run_number}\n")
+                f.write(f"Timestamp: {timestamp}\n")
+                f.write(f"Method: {selected_method}\n")
+                f.write(f"Physics Engine: {config.physics_engine}\n")
+                f.write(f"Node Sizing: {config.size_by}\n")
+                f.write(f"Seeds: {', '.join(seeds)}\n")
+                f.write(f"Files created: {len(output_files)}\n")
+                f.write(f"Files:\n")
+                for file in output_files:
+                    f.write(f"  - {file}\n")
+            
+            archived_files = [str(run_dir / f) for f in output_files]
 
             physics_name = {
                 "barnes_hut": "Barnes-Hut",
@@ -460,15 +532,18 @@ def interactive_cli():
                 "organic": "Organic"
             }.get(config.physics_engine, "Barnes-Hut")
 
-            print(f"\nNetwork outputs created using {physics_name} physics:")
+            print(f"\nNetwork outputs created using {physics_name} physics in: {run_dir}")
             print("  - unified_network_depth.html (interactive - colored by depth)")
             print("  - unified_network_communities.html (interactive - colored by community)")
             print("  - unified_communities.png (static community plot)")
             print("  - unified_network.graphml (network data)")
+            
+            # Add influence propagation file if it was created
+            if 'influence_path' in locals():
+                print("  - influence_propagation.png (influence propagation visualization)")
 
-            if archived_files:
-                print(f"\nHistory saved to: {run_dir}")
-                print(f"  Contains {len(archived_files)} files and run metadata")
+            print(f"\nAll files saved to: {run_dir}")
+            print(f"  Contains {len(output_files)} output files and run metadata")
 
         print(f"\n" + "=" * 60)
         print("NETWORK BUILDING COMPLETE!")
