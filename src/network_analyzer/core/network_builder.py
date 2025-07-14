@@ -2266,6 +2266,7 @@ class WikipediaNetworkBuilder:
         model: str = "independent_cascade",
         num_simulations: int = 100,
         activation_probability: float = 0.15,
+        edge_weight_method: str = "random",
     ) -> Dict:
         """
         Analyze influence propagation in the network.
@@ -2308,6 +2309,7 @@ class WikipediaNetworkBuilder:
                 model=model_enum,
                 num_simulations=num_simulations,
                 activation_probability=activation_probability,
+                edge_weight_method=edge_weight_method,
                 verbose=False,
             )
 
@@ -2361,6 +2363,7 @@ class WikipediaNetworkBuilder:
         model: str = "independent_cascade",
         output_path: str = "influence_propagation.png",
         activation_probability: float = 0.15,
+        edge_weight_method: str = "random",
     ):
         """
         Create visualization of influence propagation.
@@ -2396,7 +2399,10 @@ class WikipediaNetworkBuilder:
                 else PropagationModel.LINEAR_THRESHOLD
             )
             config = PropagationConfig(
-                model=model_enum, activation_probability=activation_probability, verbose=False
+                model=model_enum, 
+                activation_probability=activation_probability, 
+                edge_weight_method=edge_weight_method,
+                verbose=False
             )
 
             # Create simulator and run single simulation

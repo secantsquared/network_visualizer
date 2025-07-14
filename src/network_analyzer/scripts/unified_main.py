@@ -337,13 +337,27 @@ def interactive_cli():
                 activation_probability = 0.15
                 print("Invalid input, using default activation probability of 0.15")
             
+            # Add edge weight method selection
+            print("\nEdge weight method:")
+            print("  1. uniform - All edges have equal weight")
+            print("  2. random - Random weights (0.05-0.3)")
+            print("  3. degree_based - Inverse of target degree")
+            edge_method = input("Enter choice (1-3) [2]: ").strip()
+            if edge_method == "1":
+                edge_weight_method = "uniform"
+            elif edge_method == "3":
+                edge_weight_method = "degree_based"
+            else:
+                edge_weight_method = "random"  # Default to random for better spread
+            
             print(f"\nRunning influence propagation analysis with {model_name} model...")
             try:
                 influence_results = builder.analyze_influence_propagation(
                     seed_nodes=seeds,
                     model=model_name,
                     num_simulations=num_simulations,
-                    activation_probability=activation_probability
+                    activation_probability=activation_probability,
+                    edge_weight_method=edge_weight_method
                 )
                 
                 if influence_results:
@@ -385,7 +399,8 @@ def interactive_cli():
                             seeds=optimal['nodes'],
                             model=model_name,
                             output_path=influence_path,
-                            activation_probability=activation_probability
+                            activation_probability=activation_probability,
+                            edge_weight_method=edge_weight_method
                         )
                         print(f"✓ Influence propagation visualization created: {influence_path}")
                 

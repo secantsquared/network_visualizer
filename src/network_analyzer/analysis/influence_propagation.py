@@ -95,8 +95,10 @@ class InfluencePropagationSimulator:
     def _initialize_edge_weights(self):
         """Initialize edge weights for influence propagation."""
         if self.config.edge_weight_method == "uniform":
-            # Uniform weights
-            weight = 1.0 / max(dict(self.graph.degree()).values()) if self.graph.nodes() else 0.1
+            # Uniform weights - use a more reasonable default
+            max_degree = max(dict(self.graph.degree()).values()) if self.graph.nodes() else 1
+            # Don't let weights get too small - minimum 0.1
+            weight = max(0.1, 1.0 / max_degree)
             for u, v in self.graph.edges():
                 self.graph[u][v]['weight'] = weight
                 
