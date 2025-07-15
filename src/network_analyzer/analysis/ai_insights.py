@@ -257,7 +257,6 @@ class NetworkInsightsGenerator:
             # Parse response
             response_text = response.choices[0].message.content
             self.logger.info(f"OpenAI API response received, length: {len(response_text)} characters")
-            print(f"DEBUG: OpenAI response preview: {response_text[:500]}...")  # Force print for debugging
             
             if not response_text or len(response_text.strip()) < 50:
                 self.logger.warning(f"OpenAI API returned very short response: '{response_text[:100]}...'")
@@ -340,18 +339,28 @@ COMPLETENESS_ASSESSMENT:
         sections = {}
         current_section = None
         
-        # Parse sections from response
+        # Parse sections from response - handle both formats: "SECTION:" and "**SECTION:**"
         for line in response_text.split('\n'):
             line = line.strip()
-            if line.endswith(':') and line.replace('_', '').replace(':', '').upper() in [
-                'EXECUTIVE_SUMMARY', 'KEY_FINDINGS', 'COMMUNITY_DESCRIPTIONS', 
-                'BRIDGE_NODES', 'RESEARCH_SUGGESTIONS', 'NETWORK_PATTERNS', 
-                'COMPLETENESS_ASSESSMENT'
-            ]:
-                current_section = line.replace(':', '').upper()
+            
+            # Check for section headers in various formats
+            section_name = None
+            if line.endswith(':'):
+                # Format: "EXECUTIVE_SUMMARY:" or "**EXECUTIVE_SUMMARY:**"
+                potential_section = line.replace('*', '').replace(':', '').strip().upper()
+                if potential_section in [
+                    'EXECUTIVE_SUMMARY', 'KEY_FINDINGS', 'COMMUNITY_DESCRIPTIONS', 
+                    'BRIDGE_NODES', 'RESEARCH_SUGGESTIONS', 'NETWORK_PATTERNS', 
+                    'COMPLETENESS_ASSESSMENT'
+                ]:
+                    section_name = potential_section
+            
+            if section_name:
+                current_section = section_name
                 sections[current_section] = []
                 self.logger.debug(f"Found section: {current_section}")
-            elif current_section and line:
+            elif current_section and line and not line.startswith('**') and not line.startswith('#'):
+                # Skip markdown formatting lines but keep content
                 sections[current_section].append(line)
         
         self.logger.info(f"Parsed sections: {list(sections.keys())}")
