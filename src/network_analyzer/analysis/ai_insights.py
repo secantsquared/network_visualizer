@@ -336,17 +336,11 @@ COMPLETENESS_ASSESSMENT:
         
         self.logger.info(f"Parsing OpenAI response: {response_text[:200]}...")
         
-        # Debug: Let's see the first few lines of the actual response
-        lines = response_text.split('\n')
-        print("DEBUG: First 10 lines of OpenAI response:")
-        for i, line in enumerate(lines[:10]):
-            print(f"  {i}: '{line.strip()}'")
-        
         sections = {}
         current_section = None
         
-        # Parse sections from response - handle both formats: "SECTION:" and "**SECTION:**"
-        for line_num, line in enumerate(lines):
+        # Parse sections from response - handle various markdown formats
+        for line in response_text.split('\n'):
             line = line.strip()
             
             # Check for section headers in various formats
@@ -354,14 +348,12 @@ COMPLETENESS_ASSESSMENT:
             if line.endswith(':'):
                 # Format: "EXECUTIVE_SUMMARY:", "**EXECUTIVE_SUMMARY:**", or "### EXECUTIVE_SUMMARY:"
                 potential_section = line.replace('*', '').replace(':', '').replace('#', '').strip().upper()
-                print(f"DEBUG: Line {line_num}: Found potential section header: '{line}' -> '{potential_section}'")
                 if potential_section in [
                     'EXECUTIVE_SUMMARY', 'KEY_FINDINGS', 'COMMUNITY_DESCRIPTIONS', 
                     'BRIDGE_NODES', 'RESEARCH_SUGGESTIONS', 'NETWORK_PATTERNS', 
                     'COMPLETENESS_ASSESSMENT'
                 ]:
                     section_name = potential_section
-                    print(f"DEBUG: Matched section: {section_name}")
             
             if section_name:
                 current_section = section_name
