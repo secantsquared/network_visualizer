@@ -343,6 +343,11 @@ COMPLETENESS_ASSESSMENT:
         for line in response_text.split('\n'):
             line = line.strip()
             
+            # Debug: Print each line to see what we're getting
+            if line.endswith(':'):
+                potential_section = line.replace('*', '').replace(':', '').strip().upper()
+                print(f"DEBUG: Found potential section header: '{line}' -> '{potential_section}'")
+            
             # Check for section headers in various formats
             section_name = None
             if line.endswith(':'):
@@ -354,6 +359,7 @@ COMPLETENESS_ASSESSMENT:
                     'COMPLETENESS_ASSESSMENT'
                 ]:
                     section_name = potential_section
+                    print(f"DEBUG: Matched section: {section_name}")
             
             if section_name:
                 current_section = section_name
