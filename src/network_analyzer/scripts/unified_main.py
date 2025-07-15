@@ -427,6 +427,10 @@ def interactive_cli():
                 print("🤖 Generating AI-powered network insights...")
                 print("   This may take 10-30 seconds...")
                 
+                # Enable detailed logging for debugging AI issues
+                import logging
+                logging.basicConfig(level=logging.INFO)
+                
                 # Create AI insights generator
                 ai_generator = NetworkInsightsGenerator()
                 
