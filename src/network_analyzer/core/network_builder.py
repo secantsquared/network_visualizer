@@ -542,8 +542,8 @@ class WikipediaNetworkBuilder:
                 futures = {}
                 articles_to_process = []
 
-                # Only process unvisited articles, up to our limit
-                articles_this_round = 0
+                # Collect articles to process from frontier, then randomize processing order
+                current_level_articles = []
                 for _ in range(current_level_size):
                     if not frontier:
                         break
@@ -552,25 +552,37 @@ class WikipediaNetworkBuilder:
 
                     article = frontier.popleft()
                     if article not in self.visited:
-                        articles_to_process.append(article)
-                        futures[executor.submit(self.get_article_links, article)] = (
-                            article
-                        )
-                        articles_this_round += 1
+                        current_level_articles.append(article)
+                
+                # Randomize the order we process articles at this level to avoid bias
+                random.shuffle(current_level_articles)
+                
+                # Now submit the randomized articles for processing
+                articles_this_round = 0
+                for article in current_level_articles:
+                    articles_to_process.append(article)
+                    futures[executor.submit(self.get_article_links, article)] = article
+                    articles_this_round += 1
 
-                # Collect results
+                # Collect results and process them
                 next_articles = set()
+                all_results = []
+                
+                # First, collect all results
                 for future in as_completed(futures):
                     article = futures[future]
-
                     try:
                         links = future.result()
                     except Exception as e:
-                        self.logger.error(
-                            f"Unexpected error processing '{article}': {e}"
-                        )
+                        self.logger.error(f"Unexpected error processing '{article}': {e}")
                         links = []
-
+                    all_results.append((article, links))
+                
+                # Randomize the order we process the results to avoid bias
+                random.shuffle(all_results)
+                
+                # Now process all results in randomized order
+                for article, links in all_results:
                     # Mark as processed
                     self.graph.add_node(article, depth=depth, processed=True)
                     self.visited.add(article)
@@ -583,8 +595,12 @@ class WikipediaNetworkBuilder:
                         )
                         break
 
+                    # Shuffle links before processing to avoid bias
+                    shuffled_links = links.copy()
+                    random.shuffle(shuffled_links)
+                    
                     # Add edges and collect next frontier
-                    for target in links:
+                    for target in shuffled_links:
                         # Skip filtered articles
                         if self._should_filter_article(target):
                             continue
@@ -702,8 +718,9 @@ class WikipediaNetworkBuilder:
 
                 # Process current depth level with async
                 articles_to_process = []
-                articles_this_round = 0
 
+                # Collect articles from frontier, then randomize processing order
+                current_level_articles = []
                 for _ in range(current_level_size):
                     if not frontier:
                         break
@@ -712,8 +729,11 @@ class WikipediaNetworkBuilder:
 
                     article = frontier.popleft()
                     if article not in self.visited:
-                        articles_to_process.append(article)
-                        articles_this_round += 1
+                        current_level_articles.append(article)
+
+                # Randomize processing order to avoid bias
+                random.shuffle(current_level_articles)
+                articles_to_process = current_level_articles
 
                 # Create async tasks for all articles in this batch
                 if articles_to_process:
@@ -725,9 +745,13 @@ class WikipediaNetworkBuilder:
                     # Execute all tasks concurrently
                     results = await asyncio.gather(*tasks, return_exceptions=True)
 
-                    # Process results
+                    # Collect and randomize processing order of results
+                    article_results = list(zip(articles_to_process, results))
+                    random.shuffle(article_results)
+
+                    # Process results in randomized order
                     next_articles = set()
-                    for article, result in zip(articles_to_process, results):
+                    for article, result in article_results:
                         if isinstance(result, Exception):
                             self.logger.error(f"Error processing '{article}': {result}")
                             links = []
@@ -743,8 +767,12 @@ class WikipediaNetworkBuilder:
                         if articles_processed >= self.config.max_articles_to_process:
                             break
 
+                        # Shuffle links before processing to avoid bias
+                        shuffled_links = links.copy()
+                        random.shuffle(shuffled_links)
+
                         # Add edges and collect next frontier
-                        for target in links:
+                        for target in shuffled_links:
                             if self._should_filter_article(target):
                                 continue
 
