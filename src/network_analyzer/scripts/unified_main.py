@@ -407,6 +407,50 @@ def interactive_cli():
             except Exception as e:
                 print(f"❌ Error running influence propagation analysis: {e}")
 
+        # Ask about AI insights
+        print(f"\n" + "-" * 40)
+        print("AI-POWERED INSIGHTS")
+        print("-" * 40)
+        
+        generate_ai_insights = input("Generate AI-powered network insights? (y/n) [y]: ").strip().lower()
+        if generate_ai_insights != "n":
+            try:
+                from ..analysis.ai_insights import NetworkInsightsGenerator
+                
+                print("🤖 Generating AI-powered network insights...")
+                print("   This may take 10-30 seconds...")
+                
+                # Create AI insights generator
+                ai_generator = NetworkInsightsGenerator()
+                
+                # Determine topic from seeds
+                topic = " & ".join(seeds[:3]) + " Knowledge Network" if seeds else "Knowledge Network"
+                
+                # Generate comprehensive insights
+                comprehensive_insights = ai_generator.generate_comprehensive_insights(
+                    graph=builder.graph,
+                    communities=builder.communities,
+                    network_stats=stats,
+                    seed_nodes=seeds,
+                    topic=topic
+                )
+                
+                # Display insights
+                print(ai_generator.format_comprehensive_insights_for_display(comprehensive_insights))
+                
+                # Save insights to file
+                insights_path = str(run_dir / "ai_network_insights.md")
+                ai_generator.save_comprehensive_insights_to_file(comprehensive_insights, insights_path)
+                print(f"✓ AI insights report saved to: {insights_path}")
+                
+            except ImportError:
+                print("❌ OpenAI package not installed. Run: pip install openai")
+            except ValueError as e:
+                print(f"❌ {e}")
+                print("💡 Set your OpenAI API key: export OPENAI_API_KEY='your-key-here'")
+            except Exception as e:
+                print(f"❌ Error generating AI insights: {e}")
+
         # Ask about visualizations
         print(f"\n" + "-" * 40)
         print("VISUALIZATION OPTIONS")

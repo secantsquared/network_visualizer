@@ -594,12 +594,20 @@ class WikipediaNetworkBuilder:
                             self.graph.add_node(
                                 target, depth=depth + 1, processed=False
                             )
-                        # Now add the edge
+                            depth_map[target] = depth + 1
+                        else:
+                            # Update depth if this is a shorter path to the target
+                            current_depth = self.graph.nodes[target].get('depth', float('inf'))
+                            if depth + 1 < current_depth:
+                                self.graph.nodes[target]['depth'] = depth + 1
+                                depth_map[target] = depth + 1
+                        
+                        # Add the edge
                         self.graph.add_edge(article, target)
 
-                        if target not in self.visited and target not in depth_map:
+                        # Add to next frontier if not yet processed and not already queued
+                        if target not in self.visited and target not in next_articles:
                             next_articles.add(target)
-                            depth_map[target] = depth + 1
 
                     if progress_callback:
                         progress_callback(
@@ -745,11 +753,20 @@ class WikipediaNetworkBuilder:
                                 self.graph.add_node(
                                     target, depth=depth + 1, processed=False
                                 )
+                                depth_map[target] = depth + 1
+                            else:
+                                # Update depth if this is a shorter path to the target
+                                current_depth = self.graph.nodes[target].get('depth', float('inf'))
+                                if depth + 1 < current_depth:
+                                    self.graph.nodes[target]['depth'] = depth + 1
+                                    depth_map[target] = depth + 1
+                            
+                            # Add the edge
                             self.graph.add_edge(article, target)
 
-                            if target not in self.visited and target not in depth_map:
+                            # Add to next frontier if not yet processed and not already queued
+                            if target not in self.visited and target not in next_articles:
                                 next_articles.add(target)
-                                depth_map[target] = depth + 1
 
                         if progress_callback:
                             progress_callback(
@@ -1114,6 +1131,12 @@ class WikipediaNetworkBuilder:
                                     processed=False,
                                     is_seed=False,
                                 )
+                            else:
+                                # Update depth if this is a shorter path to the target
+                                current_depth_target = self.graph.nodes[target].get('depth', float('inf'))
+                                if next_depth < current_depth_target:
+                                    self.graph.nodes[target]['depth'] = next_depth
+                            
                             # Add edge
                             self.graph.add_edge(current_article, target)
 
@@ -1158,6 +1181,12 @@ class WikipediaNetworkBuilder:
                                         processed=False,
                                         is_seed=False,
                                     )
+                                else:
+                                    # Update depth if this is a shorter path to the target
+                                    current_depth_target = self.graph.nodes[link].get('depth', float('inf'))
+                                    if backtrack_depth + 1 < current_depth_target:
+                                        self.graph.nodes[link]['depth'] = backtrack_depth + 1
+                                
                                 self.graph.add_edge(backtrack_node, link)
                                 dfs_stack.append(
                                     (
@@ -1376,6 +1405,16 @@ class WikipediaNetworkBuilder:
                                         is_seed=False,
                                         topic_similarity=target_similarity,
                                     )
+                                else:
+                                    # Update depth if this is a shorter path to the target
+                                    current_depth_target = self.graph.nodes[target].get('depth', float('inf'))
+                                    if next_depth < current_depth_target:
+                                        self.graph.nodes[target]['depth'] = next_depth
+                                    # Update topic similarity if this is higher
+                                    current_similarity = self.graph.nodes[target].get('topic_similarity', 0)
+                                    if target_similarity > current_similarity:
+                                        self.graph.nodes[target]['topic_similarity'] = target_similarity
+                                
                                 # Add edge
                                 self.graph.add_edge(current_article, target)
 
@@ -1518,6 +1557,12 @@ class WikipediaNetworkBuilder:
                                 self.graph.add_node(
                                     target, depth=depth + 1, processed=False
                                 )
+                            else:
+                                # Update depth if this is a shorter path to the target
+                                current_depth = self.graph.nodes[target].get('depth', float('inf'))
+                                if depth + 1 < current_depth:
+                                    self.graph.nodes[target]['depth'] = depth + 1
+                            
                             self.graph.add_edge(article, target)
 
                             if target not in self.visited:
@@ -1643,6 +1688,12 @@ class WikipediaNetworkBuilder:
                                 self.graph.add_node(
                                     target, depth=spoke_depth + 1, processed=False
                                 )
+                            else:
+                                # Update depth if this is a shorter path to the target
+                                current_depth = self.graph.nodes[target].get('depth', float('inf'))
+                                if spoke_depth + 1 < current_depth:
+                                    self.graph.nodes[target]['depth'] = spoke_depth + 1
+                            
                             self.graph.add_edge(spoke, target)
 
                     if progress_callback:
