@@ -6,6 +6,13 @@ import requests_cache
 from pathlib import Path
 from datetime import datetime
 
+# Load environment variables from .env file if it exists
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # python-dotenv not installed, continue without it
+
 from network_analyzer.core.config import NetworkConfig
 from network_analyzer.core.unified_network_builder import UnifiedNetworkBuilder
 

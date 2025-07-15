@@ -12,6 +12,13 @@ from dataclasses import dataclass
 import networkx as nx
 import logging
 
+# Load environment variables from .env file if it exists
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # python-dotenv not installed, continue without it
+
 try:
     import openai
     OPENAI_AVAILABLE = True
