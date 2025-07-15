@@ -257,6 +257,7 @@ class NetworkInsightsGenerator:
             # Parse response
             response_text = response.choices[0].message.content
             self.logger.info(f"OpenAI API response received, length: {len(response_text)} characters")
+            print(f"DEBUG: OpenAI response preview: {response_text[:500]}...")  # Force print for debugging
             
             if not response_text or len(response_text.strip()) < 50:
                 self.logger.warning(f"OpenAI API returned very short response: '{response_text[:100]}...'")
