@@ -336,23 +336,25 @@ COMPLETENESS_ASSESSMENT:
         
         self.logger.info(f"Parsing OpenAI response: {response_text[:200]}...")
         
+        # Debug: Let's see the first few lines of the actual response
+        lines = response_text.split('\n')
+        print("DEBUG: First 10 lines of OpenAI response:")
+        for i, line in enumerate(lines[:10]):
+            print(f"  {i}: '{line.strip()}'")
+        
         sections = {}
         current_section = None
         
         # Parse sections from response - handle both formats: "SECTION:" and "**SECTION:**"
-        for line in response_text.split('\n'):
+        for line_num, line in enumerate(lines):
             line = line.strip()
-            
-            # Debug: Print each line to see what we're getting
-            if line.endswith(':'):
-                potential_section = line.replace('*', '').replace(':', '').strip().upper()
-                print(f"DEBUG: Found potential section header: '{line}' -> '{potential_section}'")
             
             # Check for section headers in various formats
             section_name = None
             if line.endswith(':'):
-                # Format: "EXECUTIVE_SUMMARY:" or "**EXECUTIVE_SUMMARY:**"
-                potential_section = line.replace('*', '').replace(':', '').strip().upper()
+                # Format: "EXECUTIVE_SUMMARY:", "**EXECUTIVE_SUMMARY:**", or "### EXECUTIVE_SUMMARY:"
+                potential_section = line.replace('*', '').replace(':', '').replace('#', '').strip().upper()
+                print(f"DEBUG: Line {line_num}: Found potential section header: '{line}' -> '{potential_section}'")
                 if potential_section in [
                     'EXECUTIVE_SUMMARY', 'KEY_FINDINGS', 'COMMUNITY_DESCRIPTIONS', 
                     'BRIDGE_NODES', 'RESEARCH_SUGGESTIONS', 'NETWORK_PATTERNS', 
